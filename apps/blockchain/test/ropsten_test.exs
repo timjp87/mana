@@ -8,7 +8,7 @@ defmodule RopstenTest do
 
   use ExUnit.Case, async: true
 
-  @n 12
+  @n 11
 
   setup_all do
     blocks = File.read!("test/support/ropsten_blocks.dat")
