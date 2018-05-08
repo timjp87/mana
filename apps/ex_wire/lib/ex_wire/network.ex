@@ -31,6 +31,22 @@ defmodule ExWire.Network do
 
   @type handler_action :: :no_action | {:sent_message, atom()}
 
+  # @spec bootsrap(String.t())
+  # def bootstrap(enode) do
+  #   timestamp = ExWire.Util.Timestamp.soon()
+  #
+  #   ping = %ExWire.Message.Ping{
+  #     version: 1,
+  #     from: %ExWire.Struct.Endpoint{
+  #       ip: @local_peer,
+  #       tcp_port: @local_tcp_port,
+  #       udp_port: @local_peer_port
+  #     },
+  #     to: %ExWire.Struct.Endpoint{ip: remote_ip, tcp_port: nil, udp_port: remote_peer_port},
+  #     timestamp: timestamp
+  #   }
+  # end
+
   @doc """
   Top-level receiver function to process an incoming message.
   We'll first validate the message, and then pass it to

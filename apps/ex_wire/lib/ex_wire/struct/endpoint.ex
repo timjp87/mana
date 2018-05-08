@@ -17,6 +17,30 @@ defmodule ExWire.Struct.Endpoint do
         }
 
   @doc """
+  Returns a struct given a enode string
+
+  ## Examples
+
+      iex> ExWire.Struct.Endpoint.from_peer(%ExWire.Struct.Peer{host: "1.2.3.4", ident: "000000...000000", port: 30303, remote_id: <<4, 5, 6>>})
+      %ExWire.Struct.Endpoint{
+        ip: [1, 2, 3, 4],
+        udp_port: 30303,
+        tcp_port: nil,
+      }
+  """
+  @spec from_peer(ExWire.Struct.Peer.t()) :: t
+  def from_peer(%ExWire.Struct.Peer{
+      host: host,
+      port: port
+  }) do
+
+    %__MODULE__{
+      ip: parse_ip(host),
+      udp_port: port,
+    }
+  end
+
+  @doc """
   Returns a struct given an `ip` in binary form, plus an
   `udp_port` or `tcp_port`.
 
@@ -149,5 +173,14 @@ defmodule ExWire.Struct.Endpoint do
       nil -> <<>>
       _ -> port |> :binary.encode_unsigned() |> ExthCrypto.Math.pad(2)
     end
+  end
+
+  @spec parse_ip(String.t()) :: String.t()
+  defp parse_ip(ip_string) do
+    {:ok, ip} = ip_string
+      |> String.to_charlist()
+      |> :inet.parse_address()
+
+    Tuple.to_list(ip)
   end
 end
