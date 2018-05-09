@@ -13,18 +13,18 @@ defmodule Mix.Tasks.Sync do
   def run(args) do
     {:ok, peer} = ExWire.Struct.Peer.from_uri(@remote_test_peer)
 
-    sync_block(0, peer)
+    tree = Blockchain.Blocktree.new_tree()
+    sync_block(0, tree, peer)
   end
 
-  def sync_block(number, peer) do
+  def sync_block(number, tree, peer) do
     {:ok, client_pid} = TCP.start_link(:outbound, peer)
+    ref = Process.monitor(client_pid)
 
     TCP.subscribe(client_pid, {__MODULE__, :receive_packet, [self()]})
 
     db = MerklePatriciaTree.Test.random_ets_db()
-    tree = Blockchain.Blocktree.new_tree()
     chain = Blockchain.Test.ropsten_chain()
-
 
     receive_status(client_pid, db, tree, chain, number)
   end
@@ -32,6 +32,9 @@ defmodule Mix.Tasks.Sync do
   def receive_status(client_pid, db, tree, chain, number) do
     IO.inspect "Requesting block ##{number}"
     receive do
+      {:DOWN, ref, :process, object, reason} ->
+        IO.inspect "Shutting down"
+        IO.inspect reason
       {:incoming_packet,
        _packet = %Packet.Status{
          best_hash: best_hash,
@@ -61,14 +64,17 @@ defmodule Mix.Tasks.Sync do
           do: Logger.debug("Expecting status packet, got: #{inspect(packet)}")
 
         receive_status(client_pid, db, tree, chain, number)
-    after
-      15_000 ->
-        raise "Expected status, but did not receive before timeout."
+    # after
+    #   15_000 ->
+    #     raise "Expected status, but did not receive before timeout."
     end
   end
 
   def receive_block_headers(client_pid, db, tree, chain) do
     receive do
+      {:DOWN, ref, :process, object, reason} ->
+        IO.inspect "Shutting down"
+        IO.inspect reason
       {:incoming_packet, packet = %Packet.BlockHeaders{headers: headers}} ->
         ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockBodies{
           hashes: Enum.map(headers, &Block.Header.hash/1)
@@ -82,28 +88,34 @@ defmodule Mix.Tasks.Sync do
 
         receive_block_headers(client_pid, db, tree, chain)
       error -> IO.inspect error
-    after
-      30_000 ->
-        raise "Expected block headers, but did not receive before timeout."
+    # after
+    #   30_000 ->
+    #     raise "Expected block headers, but did not receive before timeout."
     end
   end
 
   def receive_block_bodies(client_pid, headers, db, tree, chain) do
     receive do
+      {:DOWN, ref, :process, object, reason} ->
+        IO.inspect "Shutting down"
+        IO.inspect reason
       {:incoming_packet, packet = %Packet.BlockBodies{blocks: blocks}} ->
+        # tree = Enum.with_index(headers)
+        #   |> Enum.map(fn({header, index}) ->
+        #     %Blockchain.Block{
+        #       header: header,
+        #       transactions: Enum.fetch!(blocks, index).transactions,
+        #       ommers: Enum.fetch!(blocks, index).ommers,
+        #     }
+        #   end)
+        #   |> IO.inspect
+        #   |> Enum.reduce(tree, fn(block, new_tree) ->
+        #     add_block_to_blocktree(block, new_tree, chain, db)
+        #   end)
 
-        tree = Enum.with_index(headers)
-        |> Enum.map(fn({header, index}) ->
-          %Blockchain.Block{
-            header: header,
-            transactions: Enum.fetch!(blocks, index).transactions,
-            ommers: Enum.fetch!(blocks, index).ommers,
-          }
-        end)
-        |> Enum.reduce(tree, fn(block, new_tree) ->
-          add_block_to_blocktree(block, new_tree, chain, db)
-        end)
-
+        Process.sleep(10000)
+        {:ok, peer} = ExWire.Struct.Peer.from_uri(@remote_test_peer)
+        sync_block(hd(headers).number + 1, tree, peer)
 
         Logger.warn("Successfully received genesis block from peer.")
 
@@ -112,9 +124,9 @@ defmodule Mix.Tasks.Sync do
         #   do: Logger.debug("Expecting block bodies packet, got: #{inspect(packet)}")
 
         receive_block_bodies(client_pid, headers, db, tree, chain)
-    after
-      15_000 ->
-        raise "Expected block bodies, but did not receive before timeout."
+    # after
+    #   15_000 ->
+    #     raise "Expected block bodies, but did not receive before timeout."
     end
   end
 

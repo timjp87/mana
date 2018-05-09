@@ -87,9 +87,11 @@ defmodule ExWire.RemoteConnectionTest do
 
   def receive_neighbours() do
     receive do
-      {:inbound_message, inbound_message} ->
+      {:inbound_message, inbound_message = %ExWire.Message.Neighbours{}} ->
+        IO.inspect inbound_message
         # Check the message looks good
         message = decode_message(inbound_message)
+        IO.inspect message
 
         IO.inspect message
         assert Enum.count(message.nodes) > 5
