@@ -64,12 +64,12 @@ defmodule Mix.Tasks.Sync do
 
   def receive_block_headers(client_pid, db, tree, chain) do
     receive do
-      {:incoming_packet, packet = %Packet.BlockHeaders{headers: [header]}} ->
+      {:incoming_packet, packet = %Packet.BlockHeaders{headers: headers}} ->
         ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockBodies{
-          hashes: [header |> Block.Header.hash()]
+          hashes: Enum.map(headers, &Block.Header.hash/1)
         })
 
-        receive_block_bodies(client_pid, header, db, tree, chain)
+        receive_block_bodies(client_pid, headers, db, tree, chain)
 
       {:incoming_packet, packet} ->
         if System.get_env("TRACE"),
@@ -83,23 +83,31 @@ defmodule Mix.Tasks.Sync do
     end
   end
 
-  def receive_block_bodies(client_pid, header, db, tree, chain) do
+  def receive_block_bodies(client_pid, headers, db, tree, chain) do
     receive do
-      {:incoming_packet, packet = %Packet.BlockBodies{blocks: [block]}} ->
-        blockchain_block = %Blockchain.Block{
-          header: header,
-          transactions: block.transactions,
-          ommers: block.ommers,
-        }
+      {:incoming_packet, packet = %Packet.BlockBodies{blocks: blocks}} ->
+        # IO.inspect "Blocks:"
+        # IO.inspect blocks
+        # IO.inspect headers
 
-        add_block_to_blocktree(blockchain_block, tree, chain, db)
+        Enum.with_index(headers)
+        |> Enum.map(fn({header, index}) ->
+          %Blockchain.Block{
+          header: header,
+          transactions: Enum.fetch!(blocks, index).transactions,
+          ommers: Enum.fetch!(blocks, index).ommers,
+        }
+        end)
+        |> Enum.reduce(tree, fn(block, new_tree) ->
+          add_block_to_blocktree(block, new_tree, chain, db)
+        end)
         Logger.warn("Successfully received genesis block from peer.")
 
       {:incoming_packet, packet} ->
         if System.get_env("TRACE"),
           do: Logger.debug("Expecting block bodies packet, got: #{inspect(packet)}")
 
-        receive_block_bodies(client_pid, header, db, tree, chain)
+        receive_block_bodies(client_pid, headers, db, tree, chain)
     after
       5_000 ->
         raise "Expected block bodies, but did not receive before timeout."
