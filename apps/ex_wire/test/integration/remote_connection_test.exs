@@ -91,6 +91,7 @@ defmodule ExWire.RemoteConnectionTest do
         # Check the message looks good
         message = decode_message(inbound_message)
 
+        IO.inspect message
         assert Enum.count(message.nodes) > 5
     after
       2_000 ->

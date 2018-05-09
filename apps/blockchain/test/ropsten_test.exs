@@ -29,10 +29,19 @@ defmodule RopstenTest do
     tree = Blockchain.Blocktree.new_tree()
     chain = Blockchain.Test.ropsten_chain()
 
-    Enum.reduce(blocks, tree, fn block, tree ->
-      {:ok, new_tree} = Blockchain.Blocktree.verify_and_add_block(tree, chain, block, db)
-
-      new_tree
-    end)
+    block = hd(blocks)
+    block2 = %Blockchain.Block{
+      #block_hash: block.block_hash,   # Hash for this block, acts simply as a cache.
+      header: %Block.Header{
+      }, # B_H
+      #transactions: block.transactions,  # B_T
+      #ommers: block.ommers,        # B_U
+    }
+    Blockchain.Blocktree.verify_and_add_block(tree, chain, block2, db)
+    # Enum.reduce(blocks, tree, fn block, tree ->
+    #   {:ok, new_tree} = Blockchain.Blocktree.verify_and_add_block(tree, chain, block, db)
+    #
+    #   new_tree
+    # end)
   end
 end
