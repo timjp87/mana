@@ -17,10 +17,14 @@ defmodule Mix.Tasks.Sync do
 
     TCP.subscribe(client_pid, {__MODULE__, :receive_packet, [self()]})
 
-    receive_status(client_pid)
+    db = MerklePatriciaTree.Test.random_ets_db()
+    tree = Blockchain.Blocktree.new_tree()
+    chain = Blockchain.Test.ropsten_chain()
+
+    receive_status(client_pid, db, tree, chain)
   end
 
-  def receive_status(client_pid) do
+  def receive_status(client_pid, db, tree, chain) do
     receive do
       {:incoming_packet,
        _packet = %Packet.Status{
@@ -28,7 +32,7 @@ defmodule Mix.Tasks.Sync do
          total_difficulty: total_difficulty,
          genesis_hash: genesis_hash
        }} ->
-         IO.inspect best_hash
+         # IO.inspect best_hash
         # Send a simple status message
         TCP.send_packet(client_pid, %Packet.Status{
           protocol_version: ExWire.Config.protocol_version(),
@@ -40,38 +44,38 @@ defmodule Mix.Tasks.Sync do
 
         ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockHeaders{
           block_identifier: genesis_hash,
-          max_headers: 10,
+          max_headers: 1,
           skip: 0,
           reverse: false
         })
 
-        receive_block_headers(client_pid)
+        receive_block_headers(client_pid, db, tree, chain)
 
       {:incoming_packet, packet} ->
         if System.get_env("TRACE"),
           do: Logger.debug("Expecting status packet, got: #{inspect(packet)}")
 
-        receive_status(client_pid)
+        receive_status(client_pid, db, tree, chain)
     after
-      3_000 ->
+      5_000 ->
         raise "Expected status, but did not receive before timeout."
     end
   end
 
-  def receive_block_headers(client_pid) do
+  def receive_block_headers(client_pid, db, tree, chain) do
     receive do
       {:incoming_packet, packet = %Packet.BlockHeaders{headers: [header]}} ->
         ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockBodies{
           hashes: [header |> Block.Header.hash()]
         })
 
-        receive_block_bodies(client_pid, header)
+        receive_block_bodies(client_pid, header, db, tree, chain)
 
       {:incoming_packet, packet} ->
         if System.get_env("TRACE"),
           do: Logger.debug("Expecting block headers packet, got: #{inspect(packet)}")
 
-        receive_block_headers(client_pid)
+        receive_block_headers(client_pid, db, tree, chain)
       error -> IO.inspect error
     after
       30_000 ->
@@ -79,34 +83,31 @@ defmodule Mix.Tasks.Sync do
     end
   end
 
-  def receive_block_bodies(client_pid, header) do
+  def receive_block_bodies(client_pid, header, db, tree, chain) do
     receive do
       {:incoming_packet, packet = %Packet.BlockBodies{blocks: [block]}} ->
-
-        # IO.inspect block
         blockchain_block = %Blockchain.Block{
           header: header,
           transactions: block.transactions,
           ommers: block.ommers,
         }
 
-        IO.inspect Trie.new(@db)
-        # IO.inspect add_block_to_blocktree(blockchain_block, @initial_tree)
+        add_block_to_blocktree(blockchain_block, tree, chain, db)
         Logger.warn("Successfully received genesis block from peer.")
 
       {:incoming_packet, packet} ->
         if System.get_env("TRACE"),
           do: Logger.debug("Expecting block bodies packet, got: #{inspect(packet)}")
 
-        receive_block_bodies(client_pid, header)
+        receive_block_bodies(client_pid, header, db, tree, chain)
     after
-      3_000 ->
+      5_000 ->
         raise "Expected block bodies, but did not receive before timeout."
     end
   end
 
-  def add_block_to_blocktree(block, tree) do
-    {:ok, new_tree} = Blockchain.Blocktree.verify_and_add_block(tree, @chain, block, @db)
+  def add_block_to_blocktree(block, tree, chain, db) do
+    {:ok, new_tree} = Blockchain.Blocktree.verify_and_add_block(tree, chain, block, db)
 
     new_tree
   end
