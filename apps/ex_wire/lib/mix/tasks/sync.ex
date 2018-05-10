@@ -13,18 +13,18 @@ defmodule Mix.Tasks.Sync do
   def run(args) do
     {:ok, peer} = ExWire.Struct.Peer.from_uri(@remote_test_peer)
 
+    db = MerklePatriciaTree.Test.random_ets_db()
     tree = Blockchain.Blocktree.new_tree()
-    sync_block(0, tree, peer)
+    chain = Blockchain.Test.ropsten_chain()
+
+    sync_block(0, db, tree, chain, peer)
   end
 
-  def sync_block(number, tree, peer) do
+  def sync_block(number, db, tree, chain, peer) do
     {:ok, client_pid} = TCP.start_link(:outbound, peer)
     ref = Process.monitor(client_pid)
 
     TCP.subscribe(client_pid, {__MODULE__, :receive_packet, [self()]})
-
-    db = MerklePatriciaTree.Test.random_ets_db()
-    chain = Blockchain.Test.ropsten_chain()
 
     receive_status(client_pid, db, tree, chain, number)
   end
@@ -100,22 +100,21 @@ defmodule Mix.Tasks.Sync do
         IO.inspect "Shutting down"
         IO.inspect reason
       {:incoming_packet, packet = %Packet.BlockBodies{blocks: blocks}} ->
-        # tree = Enum.with_index(headers)
-        #   |> Enum.map(fn({header, index}) ->
-        #     %Blockchain.Block{
-        #       header: header,
-        #       transactions: Enum.fetch!(blocks, index).transactions,
-        #       ommers: Enum.fetch!(blocks, index).ommers,
-        #     }
-        #   end)
-        #   |> IO.inspect
-        #   |> Enum.reduce(tree, fn(block, new_tree) ->
-        #     add_block_to_blocktree(block, new_tree, chain, db)
-        #   end)
+        tree = Enum.with_index(headers)
+          |> Enum.map(fn({header, index}) ->
+            %Blockchain.Block{
+              header: header,
+              transactions: Enum.fetch!(blocks, index).transactions,
+              ommers: Enum.fetch!(blocks, index).ommers,
+            }
+          end)
+          |> Enum.reduce(tree, fn(block, new_tree) ->
+            add_block_to_blocktree(block, new_tree, chain, db)
+          end)
 
         Process.sleep(10000)
         {:ok, peer} = ExWire.Struct.Peer.from_uri(@remote_test_peer)
-        sync_block(hd(headers).number + 1, tree, peer)
+        sync_block(hd(headers).number + 1, db, tree, chain, peer)
 
         Logger.warn("Successfully received genesis block from peer.")
 
