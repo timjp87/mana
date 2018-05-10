@@ -21,7 +21,7 @@ defmodule ExWire.RemoteConnectionTest do
   @moduletag integration: true
   @moduletag network: true
 
-  @local_host [127, 0, 0, 1]
+  @local_peer [127, 0, 0, 1]
   @local_peer_port 35353
   @local_tcp_port 36363
 
@@ -37,30 +37,46 @@ defmodule ExWire.RemoteConnectionTest do
                       ExWire.Config.chain().nodes |> List.last()
 
   test "connect to remote peer for discovery" do
-    {:ok, remote_peer} = ExWire.Struct.Peer.from_uri(@remote_test_peer)
-    remote_endpoint = ExWire.Struct.Endpoint.from_peer(remote_peer)
-    local_endpoint = %ExWire.Struct.Endpoint{
-      ip: @local_host,
-      tcp_port: @local_tcp_port,
-      udp_port: @local_peer_port
+    %URI{
+      scheme: "enode",
+      userinfo: remote_id,
+      host: remote_host,
+      port: remote_peer_port
+    } = URI.parse(@remote_test_peer)
+
+    remote_ip =
+      with {:ok, remote_ip} <- :inet.ip(remote_host |> String.to_charlist()) do
+        remote_ip |> Tuple.to_list()
+      end
+
+    remote_peer = %ExWire.Struct.Endpoint{
+      ip: remote_ip,
+      udp_port: remote_peer_port
     }
 
-    {:ok, client_pid} = ExWire.Adapter.UDP.start_link({__MODULE__, [self()]}, local_endpoint.udp_port)
+    # First, start a new client
+    {:ok, client_pid} = ExWire.Adapter.UDP.start_link({__MODULE__, [self()]}, @local_peer_port)
 
-    timestamp =  ExWire.Util.Timestamp.soon()
+    # Now, we'll send a ping / pong to verify connectivity
+    timestamp = ExWire.Util.Timestamp.soon()
+
     ping = %ExWire.Message.Ping{
       version: 1,
-      from: local_endpoint,
-      to: remote_endpoint,
-      timestamp: ExWire.Util.Timestamp.soon()
+      from: %ExWire.Struct.Endpoint{
+        ip: @local_peer,
+        tcp_port: @local_tcp_port,
+        udp_port: @local_peer_port
+      },
+      to: %ExWire.Struct.Endpoint{ip: remote_ip, tcp_port: nil, udp_port: remote_peer_port},
+      timestamp: timestamp
     }
 
-    ExWire.Network.send(ping, client_pid, remote_endpoint)
+    ExWire.Network.send(ping, client_pid, remote_peer)
 
-    receive_pong(timestamp, client_pid, remote_endpoint, remote_peer)
+    receive_pong(timestamp, client_pid, remote_peer, remote_id)
   end
 
-  def receive_pong(timestamp, client_pid, remote_endpoint, remote_peer) do
+  def receive_pong(timestamp, client_pid, remote_peer, remote_id) do
     receive do
       {:inbound_message, inbound_message} ->
         # Check the message looks good
@@ -72,11 +88,11 @@ defmodule ExWire.RemoteConnectionTest do
 
         # If so, we're going to continue on to "find neighbours."
         find_neighbours = %ExWire.Message.FindNeighbours{
-          target: remote_peer.remote_id |> ExthCrypto.Key.der_to_raw(),
+          target: remote_id |> ExthCrypto.Math.hex_to_bin(),
           timestamp: ExWire.Util.Timestamp.soon()
         }
 
-        ExWire.Network.send(find_neighbours, client_pid, remote_endpoint)
+        ExWire.Network.send(find_neighbours, client_pid, remote_peer)
 
         receive_neighbours()
     after
@@ -87,13 +103,10 @@ defmodule ExWire.RemoteConnectionTest do
 
   def receive_neighbours() do
     receive do
-      {:inbound_message, inbound_message = %ExWire.Message.Neighbours{}} ->
-        IO.inspect inbound_message
+      {:inbound_message, inbound_message} ->
         # Check the message looks good
         message = decode_message(inbound_message)
-        IO.inspect message
 
-        IO.inspect message
         assert Enum.count(message.nodes) > 5
     after
       2_000 ->
