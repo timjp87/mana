@@ -17,105 +17,102 @@ defmodule Mix.Tasks.Sync do
     tree = Blockchain.Blocktree.new_tree()
     chain = Blockchain.Test.ropsten_chain()
 
-    sync_block(0, db, tree, chain, peer)
+    state = %{
+      db: db,
+      tree: tree,
+      chain: chain,
+      peer: peer,
+      number: 0,
+      current_headers: []
+    }
+
+    sync_block(state)
   end
 
-  def sync_block(number, db, tree, chain, peer) do
-    {:ok, client_pid} = TCP.start_link(:outbound, peer)
+  def sync_block(state) do
+    {:ok, client_pid} = TCP.start_link(:outbound, state.peer)
 
     TCP.subscribe(client_pid, {__MODULE__, :receive_packet, [self()]})
 
-    receive_status(client_pid, db, tree, chain, number)
+    handle_packet(client_pid, state)
   end
 
-  def receive_status(client_pid, db, tree, chain, number) do
-    IO.inspect("Requesting block ##{number}")
-
+  def handle_packet(client_pid, state) do
     receive do
-      {:incoming_packet,
-       _packet = %Packet.Status{
-         best_hash: best_hash,
-         total_difficulty: total_difficulty,
-         genesis_hash: genesis_hash
-       }} ->
-        # Send a simple status message
-        TCP.send_packet(client_pid, %Packet.Status{
-          protocol_version: ExWire.Config.protocol_version(),
-          network_id: ExWire.Config.network_id(),
-          total_difficulty: total_difficulty,
-          best_hash: genesis_hash,
-          genesis_hash: genesis_hash
-        })
+      {:incoming_packet, packet = %Packet.Status{}} ->
+        send_status_message(client_pid, packet)
+        request_block_headers(client_pid, state)
+        handle_packet(client_pid, state)
 
-        ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockHeaders{
-          block_identifier: number,
-          max_headers: 1,
-          skip: 0,
-          reverse: false
-        })
+      {:incoming_packet, %Packet.BlockHeaders{headers: headers}} ->
+        request_block_bodies(client_pid, headers)
+        handle_packet(client_pid, %{state | current_headers: headers})
 
-        receive_block_headers(client_pid, db, tree, chain)
+      {:incoming_packet, %Packet.BlockBodies{blocks: blocks}} ->
+        tree = process_block_bodies(blocks, state)
+        Process.sleep(5000)
+        sync_block(%{state | number: hd(state.current_headers).number + 1, tree: tree})
 
       {:incoming_packet, _packet} ->
-        receive_status(client_pid, db, tree, chain, number)
+        handle_packet(client_pid, state)
 
       error ->
-        raise "Expecting status packet, got: #{inspect(error)}"
+        raise "Unexpected packet, got: #{inspect(error)}"
     end
   end
 
-  def receive_block_headers(client_pid, db, tree, chain) do
-    receive do
-      {:incoming_packet, packet = %Packet.BlockHeaders{headers: headers}} ->
-        ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockBodies{
-          hashes: Enum.map(headers, &Block.Header.hash/1)
-        })
-
-        receive_block_bodies(client_pid, headers, db, tree, chain)
-
-      {:incoming_packet, _packet} ->
-        receive_block_headers(client_pid, db, tree, chain)
-
-      error ->
-        raise "Error receiving block headers: #{inspect(error)}"
-    end
+  def send_status_message(client_pid, packet) do
+    TCP.send_packet(client_pid, %Packet.Status{
+      protocol_version: ExWire.Config.protocol_version(),
+      network_id: ExWire.Config.network_id(),
+      total_difficulty: packet.total_difficulty,
+      best_hash: packet.genesis_hash,
+      genesis_hash: packet.genesis_hash
+    })
   end
 
-  def receive_block_bodies(client_pid, headers, db, tree, chain) do
-    receive do
-      {:incoming_packet, packet = %Packet.BlockBodies{blocks: blocks}} ->
-        tree =
-          Enum.with_index(headers)
-          |> Enum.map(fn {header, index} ->
-            %Blockchain.Block{
-              header: header,
-              transactions: Enum.fetch!(blocks, index).transactions,
-              ommers: Enum.fetch!(blocks, index).ommers
-            }
-          end)
-          |> Enum.reduce(tree, fn block, new_tree ->
-            add_block_to_blocktree(block, new_tree, chain, db)
-          end)
+  def request_block_headers(client_pid, state) do
+    Logger.warn("Requesting block headers for block ##{inspect(state.number)}")
 
-        Process.sleep(10000)
-        {:ok, peer} = ExWire.Struct.Peer.from_uri(@remote_test_peer)
-        sync_block(hd(headers).number + 1, db, tree, chain, peer)
-
-        Logger.warn("Successfully received genesis block from peer.")
-
-      error ->
-        raise "Error receiving block bodies: #{inspect(error)}"
-    end
+    ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockHeaders{
+      block_identifier: state.number,
+      max_headers: 1,
+      skip: 0,
+      reverse: false
+    })
   end
 
-  def add_block_to_blocktree(block, tree, chain, db) do
-    {:ok, new_tree} = Blockchain.Blocktree.verify_and_add_block(tree, chain, block, db)
-
-    new_tree
+  def request_block_bodies(client_pid, headers) do
+    ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockBodies{
+      hashes: Enum.map(headers, &Block.Header.hash/1)
+    })
   end
 
-  def receive(inbound_message, pid) do
-    send(pid, {:inbound_message, inbound_message})
+  def process_block_bodies(blocks, state) do
+    Logger.warn("Successfully received block ##{inspect(state.number)} from peer.")
+
+    state.current_headers
+    |> ex_wire_blocks_to_blockchain_blocks(blocks)
+    |> add_blocks_to_blocktree(state.tree, state.chain, state.db)
+  end
+
+  def ex_wire_blocks_to_blockchain_blocks(headers, blocks) do
+    headers
+    |> Enum.with_index()
+    |> Enum.map(fn {header, index} ->
+      %Blockchain.Block{
+        header: header,
+        transactions: Enum.fetch!(blocks, index).transactions,
+        ommers: Enum.fetch!(blocks, index).ommers
+      }
+    end)
+  end
+
+  def add_blocks_to_blocktree(blocks, original_tree, chain, db) do
+    Enum.reduce(blocks, original_tree, fn block, tree ->
+      {:ok, new_tree} = Blockchain.Blocktree.verify_and_add_block(tree, chain, block, db)
+      new_tree
+    end)
   end
 
   def receive_packet(inbound_packet, pid) do
