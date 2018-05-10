@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Sync do
   @initial_tree Blockchain.Blocktree.new_tree()
   @chain Blockchain.Test.ropsten_chain()
   @remote_test_peer System.get_env("REMOTE_TEST_PEER") ||
-    ExWire.Config.chain().nodes |> List.last()
+                      ExWire.Config.chain().nodes |> List.last()
 
   def run(args) do
     {:ok, peer} = ExWire.Struct.Peer.from_uri(@remote_test_peer)
@@ -22,7 +22,6 @@ defmodule Mix.Tasks.Sync do
 
   def sync_block(number, db, tree, chain, peer) do
     {:ok, client_pid} = TCP.start_link(:outbound, peer)
-    ref = Process.monitor(client_pid)
 
     TCP.subscribe(client_pid, {__MODULE__, :receive_packet, [self()]})
 
@@ -30,11 +29,9 @@ defmodule Mix.Tasks.Sync do
   end
 
   def receive_status(client_pid, db, tree, chain, number) do
-    IO.inspect "Requesting block ##{number}"
+    IO.inspect("Requesting block ##{number}")
+
     receive do
-      {:DOWN, ref, :process, object, reason} ->
-        IO.inspect "Shutting down"
-        IO.inspect reason
       {:incoming_packet,
        _packet = %Packet.Status{
          best_hash: best_hash,
@@ -64,17 +61,14 @@ defmodule Mix.Tasks.Sync do
           do: Logger.debug("Expecting status packet, got: #{inspect(packet)}")
 
         receive_status(client_pid, db, tree, chain, number)
-    # after
-    #   15_000 ->
-    #     raise "Expected status, but did not receive before timeout."
+        # after
+        #   15_000 ->
+        #     raise "Expected status, but did not receive before timeout."
     end
   end
 
   def receive_block_headers(client_pid, db, tree, chain) do
     receive do
-      {:DOWN, ref, :process, object, reason} ->
-        IO.inspect "Shutting down"
-        IO.inspect reason
       {:incoming_packet, packet = %Packet.BlockHeaders{headers: headers}} ->
         ExWire.Adapter.TCP.send_packet(client_pid, %ExWire.Packet.GetBlockBodies{
           hashes: Enum.map(headers, &Block.Header.hash/1)
@@ -87,28 +81,28 @@ defmodule Mix.Tasks.Sync do
           do: Logger.debug("Expecting block headers packet, got: #{inspect(packet)}")
 
         receive_block_headers(client_pid, db, tree, chain)
-      error -> IO.inspect error
-    # after
-    #   30_000 ->
-    #     raise "Expected block headers, but did not receive before timeout."
+
+      error ->
+        IO.inspect(error)
+        # after
+        #   30_000 ->
+        #     raise "Expected block headers, but did not receive before timeout."
     end
   end
 
   def receive_block_bodies(client_pid, headers, db, tree, chain) do
     receive do
-      {:DOWN, ref, :process, object, reason} ->
-        IO.inspect "Shutting down"
-        IO.inspect reason
       {:incoming_packet, packet = %Packet.BlockBodies{blocks: blocks}} ->
-        tree = Enum.with_index(headers)
-          |> Enum.map(fn({header, index}) ->
+        tree =
+          Enum.with_index(headers)
+          |> Enum.map(fn {header, index} ->
             %Blockchain.Block{
               header: header,
               transactions: Enum.fetch!(blocks, index).transactions,
-              ommers: Enum.fetch!(blocks, index).ommers,
+              ommers: Enum.fetch!(blocks, index).ommers
             }
           end)
-          |> Enum.reduce(tree, fn(block, new_tree) ->
+          |> Enum.reduce(tree, fn block, new_tree ->
             add_block_to_blocktree(block, new_tree, chain, db)
           end)
 
@@ -123,9 +117,9 @@ defmodule Mix.Tasks.Sync do
         #   do: Logger.debug("Expecting block bodies packet, got: #{inspect(packet)}")
 
         receive_block_bodies(client_pid, headers, db, tree, chain)
-    # after
-    #   15_000 ->
-    #     raise "Expected block bodies, but did not receive before timeout."
+        # after
+        #   15_000 ->
+        #     raise "Expected block bodies, but did not receive before timeout."
     end
   end
 
@@ -142,5 +136,4 @@ defmodule Mix.Tasks.Sync do
   def receive_packet(inbound_packet, pid) do
     send(pid, {:incoming_packet, inbound_packet})
   end
-
 end
