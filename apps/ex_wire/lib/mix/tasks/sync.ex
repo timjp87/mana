@@ -56,14 +56,11 @@ defmodule Mix.Tasks.Sync do
 
         receive_block_headers(client_pid, db, tree, chain)
 
-      {:incoming_packet, packet} ->
-        if System.get_env("TRACE"),
-          do: Logger.debug("Expecting status packet, got: #{inspect(packet)}")
-
+      {:incoming_packet, _packet} ->
         receive_status(client_pid, db, tree, chain, number)
-        # after
-        #   15_000 ->
-        #     raise "Expected status, but did not receive before timeout."
+
+      error ->
+        raise "Expecting status packet, got: #{inspect(error)}"
     end
   end
 
@@ -76,17 +73,11 @@ defmodule Mix.Tasks.Sync do
 
         receive_block_bodies(client_pid, headers, db, tree, chain)
 
-      {:incoming_packet, packet} ->
-        if System.get_env("TRACE"),
-          do: Logger.debug("Expecting block headers packet, got: #{inspect(packet)}")
-
+      {:incoming_packet, _packet} ->
         receive_block_headers(client_pid, db, tree, chain)
 
       error ->
-        IO.inspect(error)
-        # after
-        #   30_000 ->
-        #     raise "Expected block headers, but did not receive before timeout."
+        raise "Error receiving block headers: #{inspect(error)}"
     end
   end
 
@@ -112,14 +103,8 @@ defmodule Mix.Tasks.Sync do
 
         Logger.warn("Successfully received genesis block from peer.")
 
-      {:incoming_packet, packet} ->
-        # if System.get_env("TRACE"),
-        #   do: Logger.debug("Expecting block bodies packet, got: #{inspect(packet)}")
-
-        receive_block_bodies(client_pid, headers, db, tree, chain)
-        # after
-        #   15_000 ->
-        #     raise "Expected block bodies, but did not receive before timeout."
+      error ->
+        raise "Error receiving block bodies: #{inspect(error)}"
     end
   end
 
