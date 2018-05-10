@@ -1,5 +1,4 @@
 defmodule Mix.Tasks.Sync do
-  alias MerklePatriciaTree.Trie
   require Logger
   alias ExWire.Packet
   alias ExWire.Adapter.TCP
@@ -32,28 +31,28 @@ defmodule Mix.Tasks.Sync do
   def sync_block(state) do
     {:ok, client_pid} = TCP.start_link(:outbound, state.peer)
 
-    TCP.subscribe(client_pid, {__MODULE__, :receive_packet, [self()]})
+    TCP.subscribe(client_pid, {:server, self()})
 
     handle_packet(client_pid, state)
   end
 
   def handle_packet(client_pid, state) do
     receive do
-      {:incoming_packet, packet = %Packet.Status{}} ->
+      {:packet, packet = %Packet.Status{}, _peer} ->
         send_status_message(client_pid, packet)
         request_block_headers(client_pid, state)
         handle_packet(client_pid, state)
 
-      {:incoming_packet, %Packet.BlockHeaders{headers: headers}} ->
+      {:packet, %Packet.BlockHeaders{headers: headers}, _peer} ->
         request_block_bodies(client_pid, headers)
         handle_packet(client_pid, %{state | current_headers: headers})
 
-      {:incoming_packet, %Packet.BlockBodies{blocks: blocks}} ->
+      {:packet, %Packet.BlockBodies{blocks: blocks}, _peer} ->
         tree = process_block_bodies(blocks, state)
         Process.sleep(5000)
         sync_block(%{state | number: hd(state.current_headers).number + 1, tree: tree})
 
-      {:incoming_packet, _packet} ->
+      {:packet, _packet, _peer} ->
         handle_packet(client_pid, state)
 
       error ->
@@ -113,9 +112,5 @@ defmodule Mix.Tasks.Sync do
       {:ok, new_tree} = Blockchain.Blocktree.verify_and_add_block(tree, chain, block, db)
       new_tree
     end)
-  end
-
-  def receive_packet(inbound_packet, pid) do
-    send(pid, {:incoming_packet, inbound_packet})
   end
 end

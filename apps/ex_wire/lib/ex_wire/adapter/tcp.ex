@@ -77,7 +77,7 @@ defmodule ExWire.Adapter.TCP do
     {:reply, :ok, updated_state}
   end
 
-  def handle_call({:subscribe, {:server, server} = server}, _from, state) do
+  def handle_call({:subscribe, server = {:server, _server_pid}}, _from, state) do
     updated_state =
       Map.update(state, :subscribers, [server], fn subscribers -> [server | subscribers] end)
 
