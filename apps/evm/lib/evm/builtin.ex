@@ -7,9 +7,40 @@ defmodule EVM.Builtin do
   TODO: Implement and add doc tests.
   """
 
+  @doc """
+  A precompiled contract that recovers a public key from a signed hash
+  (Elliptic curve digital signature algorithm public key recovery function)
+
+
+  ## Examples
+
+      iex> private_key = ExthCrypto.Test.private_key(:key_a)
+      iex> public_key = ExthCrypto.Signature.get_public_key(private_key)
+      iex> message = <<0, 0, 1, 77>>
+      iex> {_signature, r, s, v} = ExthCrypto.Signature.sign_digest(message, private_key)
+      iex> data = EVM.Helpers.left_pad_bytes(message) <>  EVM.Helpers.left_pad_bytes(:binary.encode_unsigned(v)) <> EVM.Helpers.left_pad_bytes(:binary.encode_unsigned(r)) <> EVM.Helpers.left_pad_bytes(:binary.encode_unsigned(s))
+      iex> EVM.Builtin.run_ecrec(4000,  %EVM.ExecEnv{data: data})
+      {1000, %EVM.SubState{}, %EVM.ExecEnv{data: data}, public_key }
+  """
+
   @spec run_ecrec(EVM.Gas.t(), EVM.ExecEnv.t()) ::
           {EVM.Gas.t(), EVM.SubState.t(), EVM.ExecEnv.t(), EVM.VM.output()}
-  def run_ecrec(gas, exec_env), do: {gas, %EVM.SubState{}, exec_env, <<>>}
+  def run_ecrec(gas, exec_env) do
+    used_gas = 3000
+
+    if(used_gas < gas) do
+      input = exec_env.data
+      <<h::binary-size(32), v::binary-size(32), r::binary-size(32), s::bitstring>> = input
+      signature = r <> s
+      recovery_id = :binary.decode_unsigned(v)
+      result = ExthCrypto.Signature.recover(h, signature, recovery_id)
+
+      gas = gas - used_gas
+      {gas, %EVM.SubState{}, exec_env, result}
+    else
+      {gas, %EVM.SubState{}, exec_env, <<>>}
+    end
+  end
 
   @doc """
   Runs SHA256 hashing
