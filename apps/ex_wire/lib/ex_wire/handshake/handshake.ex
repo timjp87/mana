@@ -220,6 +220,11 @@ defmodule ExWire.Handshake do
   @doc """
   Builds a response for an incoming authentication message.
 
+  Note that this response contains the remote peer's information. We do that becuase we want
+  to demonstrate to the peer that we have received it's message and successfully decoded it.
+  Including their own information in the ack response shows the peer that we have decoded the values
+  they sent.
+
   ## Examples
 
       iex> ExWire.Handshake.build_ack_resp(ExthCrypto.Test.public_key(:key_c), ExthCrypto.Test.init_vector())

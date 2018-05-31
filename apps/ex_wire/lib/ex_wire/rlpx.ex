@@ -28,6 +28,13 @@ defmodule ExWire.RLPx do
     end
   end
 
+  def decode_ack(encoded_ack_resp, static_private_key) do
+    with {:ok, ack_resp, _other_stuff, <<>>} <-
+           ExWire.Handshake.read_ack_resp(encoded_ack_resp, static_private_key) do
+      {:ok, ack_resp}
+    end
+  end
+
   def prepare_ack_response(auth_msg, my_ephemeral_key_pair) do
     auth_msg
     |> build_ack_resp()

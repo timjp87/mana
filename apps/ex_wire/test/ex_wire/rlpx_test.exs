@@ -6,6 +6,33 @@ defmodule ExWire.RLPxTest do
   alias ExWire.Framing.Secrets
   alias ExthCrypto.ECIES.ECDH
 
+  describe "handles a crypto handshake" do
+    test "when remote sends auth and we send ack" do
+      creds = build_all_credentials()
+      {her_unencoded_auth_msg, her_encoded_auth_msg} = build_her_auth_message(creds)
+
+      # remote sends us an auth msg and we decode
+      {:ok, my_decoded_auth_msg} =
+        RLPx.decode_auth(her_encoded_auth_msg, creds.my_static_private_key)
+
+      # generate ack response based on auth msg
+      {:ok, my_encoded_ack_resp} =
+        RLPx.prepare_ack_response(my_decoded_auth_msg, creds.my_ephemeral_key_pair)
+
+      # we send ack and remote decodes
+      {:ok, her_decoded_ack_resp} =
+        RLPx.decode_ack(my_encoded_ack_resp, creds.her_static_private_key)
+
+      # when she decodes the ack we sent, she should be able to see the ephemeral
+      # key which was in the body of the auth message. This means we
+      # successfully decoded the body and returned her own public key to show
+      # her that we indeed decoded the messages successfully
+      {her_ephemeral_public_key, _private_key} = creds.her_ephemeral_key_pair
+      assert her_decoded_ack_resp.remote_ephemeral_public_key == her_ephemeral_public_key
+      assert her_decoded_ack_resp.remote_nonce == creds.her_nonce
+    end
+  end
+
   describe "handles_auth_received/4" do
     test "decodes auth message from remote, creates ack response, and creates secrets" do
       creds = build_all_credentials()
@@ -42,12 +69,9 @@ defmodule ExWire.RLPxTest do
       {_, her_encoded_auth_msg} = build_her_auth_message(creds)
 
       {:ok, auth_msg} = RLPx.decode_auth(her_encoded_auth_msg, creds.my_static_private_key)
-
       {:ok, encoded_ack_resp} = RLPx.prepare_ack_response(auth_msg, creds.my_ephemeral_key_pair)
 
-      # decode and assert is same as ack resp
-      assert auth_msg
-      assert encoded_ack_resp
+      assert is_binary(encoded_ack_resp)
     end
   end
 
@@ -105,6 +129,24 @@ defmodule ExWire.RLPxTest do
       her_ephemeral_key_pair: ECDH.new_ecdh_keypair(),
       her_nonce: Handshake.new_nonce()
     }
+  end
+
+  def build_my_auth_message(creds) do
+    {auth_msg, _, _} =
+      Handshake.build_auth_msg(
+        creds.my_static_public_key,
+        creds.my_static_private_key,
+        creds.her_static_public_key,
+        creds.my_nonce,
+        creds.my_ephemeral_key_pair
+      )
+
+    {:ok, encoded_auth_msg} =
+      auth_msg
+      |> Handshake.Struct.AuthMsgV4.serialize()
+      |> Handshake.EIP8.wrap_eip_8(creds.her_static_public_key, creds.my_ephemeral_key_pair)
+
+    {auth_msg, encoded_auth_msg}
   end
 
   def build_her_auth_message(creds) do
