@@ -69,25 +69,6 @@ defmodule ExWire.RLPxTest do
     end
   end
 
-  describe "handles_auth_received/4" do
-    test "decodes auth message from remote, creates ack response, and creates secrets" do
-      creds = build_all_credentials()
-      {her_unencoded_auth_msg, her_encoded_auth_msg} = build_her_auth_message(creds)
-
-      {:ok, unencoded_auth_message, my_ack_response, my_secrets} =
-        RLPx.handle_auth_received(
-          her_encoded_auth_msg,
-          creds.my_ephemeral_key_pair,
-          creds.my_nonce,
-          creds.my_static_private_key
-        )
-
-      assert remove_remote_public_key(unencoded_auth_message) == her_unencoded_auth_msg
-      assert is_binary(my_ack_response)
-      assert %Secrets{} = my_secrets
-    end
-  end
-
   describe "decode_auth/2" do
     test "decodes encoded auth message Alice sends us" do
       creds = build_all_credentials()
@@ -130,21 +111,36 @@ defmodule ExWire.RLPxTest do
     end
   end
 
-  describe "derive_shared_secrets/2" do
-    test "it generates all shared secrets from an auth_msg" do
+  describe "derive_shared_secrets/3" do
+    test "it generates all shared secrets from an auth_msg and ack_resp" do
       creds = build_all_credentials()
-      {_, her_encoded_auth_msg} = build_her_auth_message(creds)
 
-      {:ok, auth_msg} = RLPx.decode_auth(her_encoded_auth_msg, creds.my_static_private_key)
-      {:ok, encoded_ack_resp} = RLPx.prepare_ack_response(auth_msg, creds.my_ephemeral_key_pair)
+      handshake = %Handshake{
+        initiator: true,
+        public_key: creds.my_static_public_key,
+        remote_public_key: creds.her_static_public_key,
+        init_nonce: creds.my_nonce,
+        ephemeral_key_pair: creds.my_ephemeral_key_pair
+      }
+
+      {:ok, encoded_auth_msg} = RLPx.prepare_auth_message(handshake, creds.my_static_private_key)
+
+      {:ok, her_decoded_auth_msg} =
+        RLPx.decode_auth(encoded_auth_msg, creds.her_static_private_key)
+
+      {:ok, her_encoded_ack_resp} =
+        RLPx.prepare_ack_response(her_decoded_auth_msg, creds.her_ephemeral_key_pair)
+
+      {:ok, my_decoded_ack_resp} =
+        RLPx.decode_ack(her_encoded_ack_resp, creds.my_static_private_key)
+
+      new_handshake = RLPx.add_ack_data(handshake, my_decoded_ack_resp)
 
       {:ok, secrets} =
         RLPx.derive_shared_secrets(
-          auth_msg,
-          her_encoded_auth_msg,
-          encoded_ack_resp,
-          creds.my_ephemeral_key_pair,
-          creds.my_nonce
+          new_handshake,
+          encoded_auth_msg,
+          her_encoded_ack_resp
         )
 
       assert %Secrets{} = secrets

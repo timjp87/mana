@@ -1,25 +1,7 @@
 defmodule ExWire.RLPx do
   alias ExWire.Handshake
 
-  def handle_auth_received(
-        encoded_auth_msg,
-        my_ephemeral_key_pair,
-        my_nonce,
-        my_static_private_key
-      ) do
-    with {:ok, auth_msg} <- decode_auth(encoded_auth_msg, my_static_private_key),
-         {:ok, encoded_ack_resp} <- prepare_ack_response(auth_msg, my_ephemeral_key_pair),
-         {:ok, secrets} <-
-           derive_shared_secrets(
-             auth_msg,
-             encoded_auth_msg,
-             encoded_ack_resp,
-             my_ephemeral_key_pair,
-             my_nonce
-           ) do
-      {:ok, auth_msg, encoded_ack_resp, secrets}
-    end
-  end
+  defdelegate add_ack_data(handshake, ack_data), to: Handshake
 
   def decode_auth(encoded_auth_msg, static_private_key) do
     with {:ok, auth_msg = %Handshake.Struct.AuthMsgV4{}, <<>>} <-
@@ -64,22 +46,19 @@ defmodule ExWire.RLPx do
   end
 
   def derive_shared_secrets(
-        auth_msg,
+        handshake,
         encoded_auth_msg,
-        encoded_ack_resp,
-        my_ephemeral_key_pair,
-        my_nonce
+        encoded_ack_resp
       ) do
-    auth_initiator = false
-    {private_key, _public_key} = my_ephemeral_key_pair
+    {_public_key, ephemeral_private_key} = handshake.ephemeral_key_pair
 
     secrets =
       ExWire.Framing.Secrets.derive_secrets(
-        auth_initiator,
-        private_key,
-        auth_msg.remote_ephemeral_public_key,
-        auth_msg.remote_nonce,
-        my_nonce,
+        handshake.initiator,
+        ephemeral_private_key,
+        handshake.remote_ephemeral_public_key,
+        handshake.resp_nonce,
+        handshake.init_nonce,
         encoded_auth_msg,
         encoded_ack_resp
       )

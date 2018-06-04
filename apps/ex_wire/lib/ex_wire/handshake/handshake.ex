@@ -20,6 +20,7 @@ defmodule ExWire.Handshake do
   alias ExWire.Handshake.Struct.AuthMsgV4
   alias ExWire.Handshake.Struct.AckRespV4
   alias ExWire.Framing.Secrets
+  alias __MODULE__
 
   defstruct [
     :initiator,
@@ -139,6 +140,18 @@ defmodule ExWire.Handshake do
           {:ok, ack_resp, encoded_ack, <<>>}
         end
     end
+  end
+
+  @doc """
+  Convenience function to add remote ephemeral public key and resp nonce to a Handshake struct.
+  """
+  @spec add_ack_data(t(), AckRespV4.t()) :: t()
+  def add_ack_data(handshake = %Handshake{}, ack_resp) do
+    %{
+      handshake
+      | remote_ephemeral_public_key: ack_resp.remote_ephemeral_public_key,
+        resp_nonce: ack_resp.remote_nonce
+    }
   end
 
   @doc """
