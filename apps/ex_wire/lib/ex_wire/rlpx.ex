@@ -35,6 +35,21 @@ defmodule ExWire.RLPx do
     end
   end
 
+  def prepare_auth_message(creds) do
+    {auth_msg, _, _} =
+      Handshake.build_auth_msg(
+        creds.my_static_public_key,
+        creds.my_static_private_key,
+        creds.her_static_public_key,
+        creds.my_nonce,
+        creds.my_ephemeral_key_pair
+      )
+
+    auth_msg
+    |> Handshake.Struct.AuthMsgV4.serialize()
+    |> Handshake.EIP8.wrap_eip_8(creds.her_static_public_key, creds.my_ephemeral_key_pair)
+  end
+
   def prepare_ack_response(auth_msg, my_ephemeral_key_pair) do
     auth_msg
     |> build_ack_resp()
