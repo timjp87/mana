@@ -21,9 +21,9 @@ defmodule ExWire.RLPx do
     end
   end
 
-  def decode_auth(encoded_auth_msg, my_static_private_key) do
+  def decode_auth(encoded_auth_msg, static_private_key) do
     with {:ok, auth_msg = %Handshake.Struct.AuthMsgV4{}, <<>>} <-
-           Handshake.read_auth_msg(encoded_auth_msg, my_static_private_key) do
+           Handshake.read_auth_msg(encoded_auth_msg, static_private_key) do
       {:ok, auth_msg}
     end
   end
@@ -35,19 +35,22 @@ defmodule ExWire.RLPx do
     end
   end
 
-  def prepare_auth_message(creds) do
+  def prepare_auth_message(handshake, static_private_key) do
     {auth_msg, _, _} =
       Handshake.build_auth_msg(
-        creds.my_static_public_key,
-        creds.my_static_private_key,
-        creds.her_static_public_key,
-        creds.my_nonce,
-        creds.my_ephemeral_key_pair
+        handshake.public_key,
+        static_private_key,
+        handshake.remote_public_key,
+        handshake.init_nonce,
+        handshake.ephemeral_key_pair
       )
 
     auth_msg
     |> Handshake.Struct.AuthMsgV4.serialize()
-    |> Handshake.EIP8.wrap_eip_8(creds.her_static_public_key, creds.my_ephemeral_key_pair)
+    |> Handshake.EIP8.wrap_eip_8(
+      handshake.remote_public_key,
+      handshake.ephemeral_key_pair
+    )
   end
 
   def prepare_ack_response(auth_msg, my_ephemeral_key_pair) do

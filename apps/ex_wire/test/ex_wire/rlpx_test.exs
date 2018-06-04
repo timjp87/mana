@@ -10,8 +10,17 @@ defmodule ExWire.RLPxTest do
     test "when we send auth and remote sends ack" do
       creds = build_all_credentials()
 
+      handshake = %Handshake{
+        initiator: true,
+        public_key: creds.my_static_public_key,
+        remote_public_key: creds.her_static_public_key,
+        init_nonce: creds.my_nonce,
+        resp_nonce: creds.her_nonce,
+        ephemeral_key_pair: creds.my_ephemeral_key_pair
+      }
+
       # we generate our encoded auth message
-      {:ok, encoded_auth_msg} = RLPx.prepare_auth_message(creds)
+      {:ok, encoded_auth_msg} = RLPx.prepare_auth_message(handshake, creds.my_static_private_key)
 
       # remote receives and decodes it
       {:ok, her_decoded_auth_msg} =
@@ -94,7 +103,16 @@ defmodule ExWire.RLPxTest do
     test "generates an encoded auth message" do
       creds = build_all_credentials()
 
-      {:ok, encoded_auth_msg} = RLPx.prepare_auth_message(creds)
+      handshake = %Handshake{
+        initiator: true,
+        public_key: creds.my_static_public_key,
+        remote_public_key: creds.her_static_public_key,
+        init_nonce: creds.my_nonce,
+        resp_nonce: creds.her_nonce,
+        ephemeral_key_pair: creds.my_ephemeral_key_pair
+      }
+
+      {:ok, encoded_auth_msg} = RLPx.prepare_auth_message(handshake, creds.my_static_private_key)
 
       assert is_binary(encoded_auth_msg)
     end

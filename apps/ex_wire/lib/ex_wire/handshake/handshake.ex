@@ -21,34 +21,32 @@ defmodule ExWire.Handshake do
   alias ExWire.Handshake.Struct.AckRespV4
   alias ExWire.Framing.Secrets
 
+  defstruct [
+    :initiator,
+    :remote_id,
+    # ecdhe-random
+    :public_key,
+    :remote_public_key,
+    # nonce
+    :init_nonce,
+    :resp_nonce,
+    # ecdhe-random
+    :ephemeral_key_pair,
+    # ecdhe-random-pubk
+    :remote_ephemeral_public_key
+  ]
+
+  @type t :: %__MODULE__{
+          initiator: boolean(),
+          remote_id: ExWire.node_id(),
+          remote_public_key: ExWire.Config.public_key(),
+          init_nonce: binary(),
+          resp_nonce: binary(),
+          ephemeral_key_pair: {ExWire.Config.public_key(), ExWire.Config.private_key()},
+          remote_ephemeral_public_key: ExWire.Config.pubic_key()
+        }
+
   @type token :: binary()
-
-  defmodule Handshake do
-    defstruct [
-      :initiator,
-      :remote_id,
-      # ecdhe-random
-      :remote_pub,
-      # nonce
-      :init_nonce,
-      #
-      :resp_nonce,
-      # ecdhe-random
-      :random_priv_key,
-      # ecdhe-random-pubk
-      :remote_random_pub
-    ]
-
-    @type t :: %__MODULE__{
-            initiator: boolean(),
-            remote_id: ExWire.node_id(),
-            remote_pub: ExWire.Config.private_key(),
-            init_nonce: binary(),
-            resp_nonce: binary(),
-            random_priv_key: ExWire.Config.private_key(),
-            remote_random_pub: ExWire.Config.pubic_key()
-          }
-  end
 
   @nonce_len 32
 
