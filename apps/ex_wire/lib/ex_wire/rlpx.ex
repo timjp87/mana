@@ -12,7 +12,7 @@ defmodule ExWire.RLPx do
 
   def decode_ack(encoded_ack_resp, static_private_key) do
     with {:ok, ack_resp, _other_stuff, <<>>} <-
-           ExWire.Handshake.read_ack_resp(encoded_ack_resp, static_private_key) do
+           Handshake.read_ack_resp(encoded_ack_resp, static_private_key) do
       {:ok, ack_resp}
     end
   end
@@ -38,8 +38,8 @@ defmodule ExWire.RLPx do
   def prepare_ack_response(auth_msg, my_ephemeral_key_pair) do
     auth_msg
     |> build_ack_resp()
-    |> ExWire.Handshake.Struct.AckRespV4.serialize()
-    |> ExWire.Handshake.EIP8.wrap_eip_8(
+    |> Handshake.Struct.AckRespV4.serialize()
+    |> Handshake.EIP8.wrap_eip_8(
       auth_msg.remote_public_key,
       my_ephemeral_key_pair
     )
@@ -67,7 +67,7 @@ defmodule ExWire.RLPx do
   end
 
   defp build_ack_resp(auth_msg) do
-    ExWire.Handshake.build_ack_resp(
+    Handshake.build_ack_resp(
       auth_msg.remote_ephemeral_public_key,
       auth_msg.remote_nonce
     )

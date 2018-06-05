@@ -94,8 +94,11 @@ defmodule ExWire.RLPxTest do
       }
 
       {:ok, encoded_auth_msg} = RLPx.prepare_auth_message(handshake, creds.my_static_private_key)
+      {:ok, decoded_auth_msg} = RLPx.decode_auth(encoded_auth_msg, creds.her_static_private_key)
 
-      assert is_binary(encoded_auth_msg)
+      {my_ephemeral_public_key, _private_key} = creds.my_ephemeral_key_pair
+      assert decoded_auth_msg.remote_ephemeral_public_key == my_ephemeral_public_key
+      assert decoded_auth_msg.remote_nonce == creds.my_nonce
     end
   end
 
@@ -106,8 +109,11 @@ defmodule ExWire.RLPxTest do
 
       {:ok, auth_msg} = RLPx.decode_auth(her_encoded_auth_msg, creds.my_static_private_key)
       {:ok, encoded_ack_resp} = RLPx.prepare_ack_response(auth_msg, creds.my_ephemeral_key_pair)
+      {:ok, decoded_ack_resp} = RLPx.decode_ack(encoded_ack_resp, creds.her_static_private_key)
 
-      assert is_binary(encoded_ack_resp)
+      {her_ephemeral_public_key, _private_key} = creds.her_ephemeral_key_pair
+      assert decoded_ack_resp.remote_ephemeral_public_key == her_ephemeral_public_key
+      assert decoded_ack_resp.remote_nonce == creds.her_nonce
     end
   end
 
