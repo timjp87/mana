@@ -35,7 +35,7 @@ defmodule ExWire.RLPxTest do
         RLPx.decode_ack(her_encoded_ack_resp, creds.my_static_private_key)
 
       # when we encoded the auth message, we sent our ephemeral public key. If
-      # she successfully received it, she should have included it in the ack
+      # remote successfully received it, she should have included it in the ack
       # response. So we can check the ack response for our own ephemeral pulic
       # key to make sure she successfully decoded things correctly
       {my_ephemeral_public_key, _private_key} = creds.my_ephemeral_key_pair
@@ -70,7 +70,7 @@ defmodule ExWire.RLPxTest do
   end
 
   describe "decode_auth/2" do
-    test "decodes encoded auth message Alice sends us" do
+    test "decodes encoded auth message remote (Alice) sends us" do
       creds = build_all_credentials()
       {her_unencoded_auth_msg, her_encoded_auth_msg} = build_her_auth_message(creds)
 
