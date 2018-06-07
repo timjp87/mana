@@ -14,8 +14,6 @@ defmodule ExWire.RLPxTest do
         initiator: true,
         public_key: creds.my_static_public_key,
         remote_public_key: creds.her_static_public_key,
-        init_nonce: creds.my_nonce,
-        resp_nonce: creds.her_nonce,
         ephemeral_key_pair: creds.my_ephemeral_key_pair
       }
 
@@ -79,7 +77,6 @@ defmodule ExWire.RLPxTest do
         public_key: creds.my_static_public_key,
         remote_public_key: creds.her_static_public_key,
         init_nonce: creds.my_nonce,
-        resp_nonce: creds.her_nonce,
         ephemeral_key_pair: creds.my_ephemeral_key_pair
       }
 
