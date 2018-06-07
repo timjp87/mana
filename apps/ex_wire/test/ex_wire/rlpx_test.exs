@@ -34,13 +34,8 @@ defmodule ExWire.RLPxTest do
       {:ok, my_decoded_ack_resp} =
         RLPx.decode_ack(her_encoded_ack_resp, creds.my_static_private_key)
 
-      # when we encoded the auth message, we sent our ephemeral public key. If
-      # remote successfully received it, she should have included it in the ack
-      # response. So we can check the ack response for our own ephemeral pulic
-      # key to make sure she successfully decoded things correctly
-      {my_ephemeral_public_key, _private_key} = creds.my_ephemeral_key_pair
-      assert my_decoded_ack_resp.remote_ephemeral_public_key == my_ephemeral_public_key
-      assert my_decoded_ack_resp.remote_nonce == creds.my_nonce
+      {her_ephemeral_public_key, _private_key} = creds.her_ephemeral_key_pair
+      assert my_decoded_ack_resp.recipient_ephemeral_public_key == her_ephemeral_public_key
     end
 
     test "when remote sends auth and we send ack" do
@@ -59,13 +54,8 @@ defmodule ExWire.RLPxTest do
       {:ok, her_decoded_ack_resp} =
         RLPx.decode_ack(my_encoded_ack_resp, creds.her_static_private_key)
 
-      # when she decodes the ack we sent, she should be able to see the ephemeral
-      # key which was in the body of the auth message. This means we
-      # successfully decoded the body and returned her own public key to show
-      # her that we indeed decoded the messages successfully
-      {her_ephemeral_public_key, _private_key} = creds.her_ephemeral_key_pair
-      assert her_decoded_ack_resp.remote_ephemeral_public_key == her_ephemeral_public_key
-      assert her_decoded_ack_resp.remote_nonce == creds.her_nonce
+      {my_ephemeral_public_key, _private_key} = creds.my_ephemeral_key_pair
+      assert her_decoded_ack_resp.recipient_ephemeral_public_key == my_ephemeral_public_key
     end
   end
 
@@ -76,7 +66,7 @@ defmodule ExWire.RLPxTest do
 
       {:ok, auth_msg} = RLPx.decode_auth(her_encoded_auth_msg, creds.my_static_private_key)
 
-      assert her_unencoded_auth_msg == remove_remote_public_key(auth_msg)
+      assert her_unencoded_auth_msg == remove_initiator_public_key(auth_msg)
     end
   end
 
@@ -97,8 +87,8 @@ defmodule ExWire.RLPxTest do
       {:ok, decoded_auth_msg} = RLPx.decode_auth(encoded_auth_msg, creds.her_static_private_key)
 
       {my_ephemeral_public_key, _private_key} = creds.my_ephemeral_key_pair
-      assert decoded_auth_msg.remote_ephemeral_public_key == my_ephemeral_public_key
-      assert decoded_auth_msg.remote_nonce == creds.my_nonce
+      assert decoded_auth_msg.initiator_ephemeral_public_key == my_ephemeral_public_key
+      assert decoded_auth_msg.initiator_nonce == creds.my_nonce
     end
   end
 
@@ -111,9 +101,8 @@ defmodule ExWire.RLPxTest do
       {:ok, encoded_ack_resp} = RLPx.prepare_ack_response(auth_msg, creds.my_ephemeral_key_pair)
       {:ok, decoded_ack_resp} = RLPx.decode_ack(encoded_ack_resp, creds.her_static_private_key)
 
-      {her_ephemeral_public_key, _private_key} = creds.her_ephemeral_key_pair
-      assert decoded_ack_resp.remote_ephemeral_public_key == her_ephemeral_public_key
-      assert decoded_ack_resp.remote_nonce == creds.her_nonce
+      {my_ephemeral_public_key, _private_key} = creds.my_ephemeral_key_pair
+      assert decoded_ack_resp.recipient_ephemeral_public_key == my_ephemeral_public_key
     end
   end
 
@@ -153,8 +142,8 @@ defmodule ExWire.RLPxTest do
     end
   end
 
-  def remove_remote_public_key(auth_message) do
-    %{auth_message | remote_ephemeral_public_key: nil}
+  def remove_initiator_public_key(auth_message) do
+    %{auth_message | initiator_ephemeral_public_key: nil}
   end
 
   def build_all_credentials do

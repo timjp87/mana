@@ -149,8 +149,8 @@ defmodule ExWire.Handshake do
   def add_ack_data(handshake = %Handshake{}, ack_resp) do
     %{
       handshake
-      | remote_ephemeral_public_key: ack_resp.remote_ephemeral_public_key,
-        resp_nonce: ack_resp.remote_nonce
+      | remote_ephemeral_public_key: ack_resp.recipient_ephemeral_public_key,
+        resp_nonce: ack_resp.recipient_nonce
     }
   end
 
