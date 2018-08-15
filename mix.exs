@@ -36,7 +36,7 @@ defmodule Exthereum.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:dialyxir, "~> 0.5", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.3", only: [:dev, :test], runtime: false},
       {:ethereumex, "~> 0.3.2"},
       {:credo, "~> 0.9.1", only: [:dev, :test], runtime: false}
     ]
