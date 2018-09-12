@@ -4,53 +4,64 @@ defmodule GenerateStateTests do
   alias Blockchain.Interface.AccountInterface
   alias Blockchain.Account.Storage
   alias ExthCrypto.Hash.Keccak
+  alias EVM.Configuration.{Frontier, Homestead, EIP150, EIP158, Byzantium, Constantinople}
 
   use EthCommonTest.Harness
 
-  @hardforks ["Byzantium", "EIP158", "EIP150", "Homestead", "Frontier"]
+  @hardforks [
+    "EIP158",
+    "EIP150",
+    "Homestead",
+    "Frontier",
+    "Byzantium",
+    "Constantinople"
+  ]
+
+  @twenty_minutes 60 * 20 * 1000
+  @initial_state %{
+    passing: %{
+      "Homestead" => [],
+      "Frontier" => [],
+      "EIP150" => [],
+      "EIP158" => [],
+      "Byzantium" => [],
+      "Constantinople" => []
+    },
+    failing: %{
+      "Homestead" => [],
+      "Frontier" => [],
+      "EIP150" => [],
+      "EIP158" => [],
+      "Byzantium" => [],
+      "Constantinople" => []
+    }
+  }
 
   def run(_args) do
-    initial_state = %{
-      passing: %{
-        "Homestead" => [],
-        "Frontier" => [],
-        "EIP150" => [],
-        "EIP158" => [],
-        "Byzantium" => []
-      },
-      failing: %{
-        "Homestead" => [],
-        "Frontier" => [],
-        "EIP150" => [],
-        "EIP158" => [],
-        "Byzantium" => []
-      }
-    }
-
     completed_tests =
-      Enum.reduce(test_directories(), initial_state, fn directory_path, completed_tests ->
-        test_group = Enum.fetch!(String.split(directory_path, "/"), 4)
-
-        directory_path
-        |> tests()
-        |> Enum.reduce(completed_tests, fn test_path, completed_tests ->
-          test_path
-          |> read_state_test_file()
-          |> Enum.reduce(completed_tests, fn {test_name, test}, completed_tests ->
-            run_test(completed_tests, test_group, test_name, test)
+      test_directories()
+      |> Task.async_stream(&run_group_tests/1, timeout: @twenty_minutes)
+      |> Enum.reduce(@initial_state, fn {:ok, result}, acc ->
+        passing =
+          Map.merge(acc[:passing], result[:passing], fn _k, v1, v2 ->
+            v1
+            |> Kernel.++(v2)
+            |> Enum.sort()
           end)
-        end)
-      end)
 
-    failing_tests =
-      completed_tests[:failing]
-      |> Enum.map(fn {hardfork, tests} ->
-        {hardfork, Enum.dedup(tests)}
+        failing =
+          Map.merge(acc[:failing], result[:failing], fn _k, v1, v2 ->
+            v1
+            |> Kernel.++(v2)
+            |> Enum.sort()
+          end)
+
+        %{acc | passing: passing, failing: failing}
       end)
-      |> Enum.into(%{})
 
     IO.puts("Failing tests")
-    IO.puts(inspect(failing_tests, limit: :infinity))
+    deduped_tests = dedup_tests(completed_tests[:failing])
+    IO.puts(inspect(deduped_tests), limit: :infinity)
 
     for hardfork <- @hardforks do
       passing_tests = length(completed_tests[:passing][hardfork])
@@ -63,6 +74,26 @@ defmodule GenerateStateTests do
         }%"
       )
     end
+  end
+
+  defp dedup_tests(tests) do
+    Enum.into(tests, %{}, fn {fork, list_of_tests} ->
+      {fork, Enum.dedup(list_of_tests)}
+    end)
+  end
+
+  defp run_group_tests(directory_path) do
+    test_group = Enum.fetch!(String.split(directory_path, "/"), -1)
+
+    directory_path
+    |> tests()
+    |> Enum.reduce(@initial_state, fn test_path, completed_tests ->
+      test_path
+      |> read_state_test_file()
+      |> Enum.reduce(completed_tests, fn {test_name, test}, completed_tests ->
+        run_test(completed_tests, test_group, test_name, test)
+      end)
+    end)
   end
 
   defp run_test(completed_tests, test_group, test_name, test) do
@@ -170,19 +201,22 @@ defmodule GenerateStateTests do
   def configuration(hardfork) do
     case hardfork do
       "Frontier" ->
-        EVM.Configuration.Frontier.new()
+        Frontier.new()
 
       "Homestead" ->
-        EVM.Configuration.Homestead.new()
+        Homestead.new()
 
       "EIP150" ->
-        EVM.Configuration.EIP150.new()
+        EIP150.new()
 
       "EIP158" ->
-        EVM.Configuration.EIP158.new()
+        EIP158.new()
 
-      # "Byzantium" ->
-      #   EVM.Configuration.Byzantium.new()
+      "Byzantium" ->
+        Byzantium.new()
+
+      "Constantinople" ->
+        Constantinople.new()
 
       _ ->
         nil

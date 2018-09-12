@@ -1,6 +1,7 @@
 defmodule BlockchainTest do
   use ExUnit.Case
-  use EthCommonTest.Harness
+
+  import EthCommonTest.Helpers
 
   alias Blockchain.{Blocktree, Account, Transaction, Chain}
   alias MerklePatriciaTree.Trie
@@ -9,41 +10,157 @@ defmodule BlockchainTest do
 
   doctest Blockchain
 
-  @ethereum_common_tests_path System.cwd() <> "/../../ethereum_common_tests/BlockchainTests/"
+  @failing_byzantium_tests File.read!(System.cwd() <> "/test/support/byzantium_failing_tests.txt")
 
   @failing_tests %{
     "Frontier" => [],
     "Homestead" => [],
     "EIP150" => [],
     "EIP158" => [
-      "GeneralStateTests/stNonZeroCallsTest/NonZeroValue_CALL_ToEmpty_d0g0v0.json",
-      "GeneralStateTests/stNonZeroCallsTest/NonZeroValue_CALL_ToOneStorageKey_d0g0v0.json",
-      "GeneralStateTests/stRevertTest/RevertPrefound_d0g0v0.json",
       "GeneralStateTests/stSpecialTest/failed_tx_xcf416c53_d0g0v0.json"
     ],
+    "Byzantium" => String.split(@failing_byzantium_tests, "\n"),
+    "Constantinople" => [
+      "GeneralStateTests/stCreate2/CREATE2_ContractSuicideDuringInit_ThenStoreThenReturn_d0g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d0g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d10g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d11g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d1g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d2g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d3g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d4g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d5g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d6g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d7g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d8g0v0.json",
+      "GeneralStateTests/stCreate2/CREATE2_Suicide_d9g0v0.json",
+      "GeneralStateTests/stCreate2/Create2OOGafterInitCodeReturndata2_d0g1v0.json",
+      "GeneralStateTests/stCreate2/Create2OOGafterInitCodeReturndataSize_d0g0v0.json",
+      "GeneralStateTests/stCreate2/Create2OOGafterInitCodeRevert2_d0g0v0.json",
+      "GeneralStateTests/stCreate2/Create2OOGafterInitCodeRevert_d0g0v0.json",
+      "GeneralStateTests/stCreate2/Create2OOGafterInitCode_d0g0v0.json",
+      "GeneralStateTests/stCreate2/Create2OOGafterInitCode_d0g1v0.json",
+      "GeneralStateTests/stCreate2/RevertDepthCreate2OOG_d0g0v0.json",
+      "GeneralStateTests/stCreate2/RevertDepthCreate2OOG_d0g0v1.json",
+      "GeneralStateTests/stCreate2/RevertDepthCreate2OOG_d0g1v0.json",
+      "GeneralStateTests/stCreate2/RevertDepthCreate2OOG_d0g1v1.json",
+      "GeneralStateTests/stCreate2/RevertDepthCreate2OOG_d1g0v0.json",
+      "GeneralStateTests/stCreate2/RevertDepthCreate2OOG_d1g0v1.json",
+      "GeneralStateTests/stCreate2/RevertDepthCreate2OOG_d1g1v0.json",
+      "GeneralStateTests/stCreate2/RevertDepthCreate2OOG_d1g1v1.json",
+      "GeneralStateTests/stCreate2/call_outsize_then_create2_successful_then_returndatasize_d0g0v0.json",
+      "GeneralStateTests/stCreate2/call_then_create2_successful_then_returndatasize_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d3g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d4g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d5g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d6g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d7g0v0.json",
+      "GeneralStateTests/stCreate2/create2InitCodes_d8g0v0.json",
+      "GeneralStateTests/stCreate2/create2callPrecompiles_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2callPrecompiles_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2callPrecompiles_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2callPrecompiles_d3g0v0.json",
+      "GeneralStateTests/stCreate2/create2callPrecompiles_d4g0v0.json",
+      "GeneralStateTests/stCreate2/create2callPrecompiles_d5g0v0.json",
+      "GeneralStateTests/stCreate2/create2callPrecompiles_d6g0v0.json",
+      "GeneralStateTests/stCreate2/create2callPrecompiles_d7g0v0.json",
+      "GeneralStateTests/stCreate2/create2checkFieldsInInitcode_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2checkFieldsInInitcode_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2checkFieldsInInitcode_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2checkFieldsInInitcode_d3g0v0.json",
+      "GeneralStateTests/stCreate2/create2checkFieldsInInitcode_d4g0v0.json",
+      "GeneralStateTests/stCreate2/create2checkFieldsInInitcode_d5g0v0.json",
+      "GeneralStateTests/stCreate2/create2checkFieldsInInitcode_d6g0v0.json",
+      "GeneralStateTests/stCreate2/create2checkFieldsInInitcode_d7g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionBalance_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionBalance_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionBalance_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionBalance_d3g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionCode2_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionCode2_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionCode_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionCode_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionCode_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionNonce_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionNonce_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionNonce_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionSelfdestructed2_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionSelfdestructed2_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionSelfdestructedRevert_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionSelfdestructedRevert_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionSelfdestructedRevert_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionSelfdestructed_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionSelfdestructed_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionSelfdestructed_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionStorage_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionStorage_d1g0v0.json",
+      "GeneralStateTests/stCreate2/create2collisionStorage_d2g0v0.json",
+      "GeneralStateTests/stCreate2/create2noCash_d0g0v0.json",
+      "GeneralStateTests/stCreate2/create2noCash_d1g0v0.json",
+      "GeneralStateTests/stCreate2/returndatacopy_0_0_following_successful_create_d0g0v0.json",
+      "GeneralStateTests/stCreate2/returndatacopy_afterFailing_create_d0g0v0.json",
+      "GeneralStateTests/stCreate2/returndatacopy_following_revert_in_create_d0g0v0.json",
+      "GeneralStateTests/stCreate2/returndatacopy_following_successful_create_d0g0v0.json",
+      "GeneralStateTests/stCreate2/returndatasize_following_successful_create_d0g0v0.json",
+      "GeneralStateTests/stCreateTest/CreateOOGafterInitCodeReturndata_d0g1v0.json",
+      "GeneralStateTests/stEIP158Specific/callToEmptyThenCallError_d0g0v0.json",
+      "GeneralStateTests/stReturnDataTest/modexp_modsize0_returndatasize_d0g1v0.json",
+      "GeneralStateTests/stReturnDataTest/modexp_modsize0_returndatasize_d0g2v0.json",
+      "GeneralStateTests/stReturnDataTest/modexp_modsize0_returndatasize_d0g3v0.json",
+      "bcStateTests/blockhashNonConstArg.json",
+      "bcStateTests/create2collisionwithSelfdestructSameBlock.json",
+      "bcStateTests/suicideStorageCheckVCreate2.json"
+    ],
     # the rest are not implemented yet
-    "Byzantium" => [],
-    "Constantinople" => [],
     "EIP158ToByzantiumAt5" => [],
     "FrontierToHomesteadAt5" => [],
     "HomesteadToDaoAt5" => [],
     "HomesteadToEIP150At5" => []
   }
 
+  @ten_minutes 1000 * 60 * 10
+  @num_test_groups 10
+
+  @tag :ethereum_common_tests
+  @tag :blockchain_common_tests
   test "runs blockchain tests" do
-    Enum.each(tests(), fn json_test_path ->
+    grouped_test_per_fork()
+    |> Task.async_stream(&run_tests(&1), timeout: @ten_minutes)
+    |> Enum.flat_map(fn {:ok, results} -> results end)
+    |> make_assertions()
+  end
+
+  defp grouped_test_per_fork do
+    for fork <- forks_with_existing_implementation(),
+        test_group <- split_tests_into_groups(@num_test_groups),
+        do: {fork, test_group}
+  end
+
+  defp split_tests_into_groups(num_groups_desired) do
+    all_tests = tests()
+    test_count = Enum.count(all_tests)
+    tests_per_group = div(test_count, num_groups_desired)
+
+    Enum.chunk_every(all_tests, tests_per_group)
+  end
+
+  defp run_tests({fork, tests}) do
+    tests
+    |> Stream.reject(&known_fork_failures?(&1, fork))
+    |> Enum.flat_map(fn json_test_path ->
       json_test_path
       |> read_test()
-      |> Enum.each(fn {name, test} ->
-        if !failing_test?(json_test_path, test) do
-          run_test(name, test)
-        end
-      end)
+      |> Stream.filter(&fork_test?(&1, fork))
+      |> Stream.map(&run_test/1)
+      |> Enum.filter(&failing_test?/1)
     end)
   end
 
-  defp failing_test?(json_test_path, json_test) do
-    hardfork_failing_tests = Map.fetch!(@failing_tests, json_test["network"])
+  defp known_fork_failures?(json_test_path, fork) do
+    hardfork_failing_tests = Map.fetch!(@failing_tests, fork)
 
     Enum.any?(hardfork_failing_tests, fn failing_test ->
       String.contains?(json_test_path, failing_test)
@@ -56,26 +173,63 @@ defmodule BlockchainTest do
     |> Poison.decode!()
   end
 
-  defp run_test(test_name, json_test) do
+  defp fork_test?({_test_name, json_test}, fork) do
+    fork == json_test["network"]
+  end
+
+  defp forks_with_existing_implementation do
+    @failing_tests
+    |> Map.keys()
+    |> Enum.reject(&fork_without_implementation?/1)
+  end
+
+  defp fork_without_implementation?(fork) do
+    fork
+    |> load_chain()
+    |> is_nil()
+  end
+
+  defp run_test({test_name, json_test}) do
     fork = json_test["network"]
     chain = load_chain(fork)
 
-    if chain do
-      state = populate_prestate(json_test)
+    state = populate_prestate(json_test)
 
-      blocktree =
-        create_blocktree()
-        |> add_genesis_block(json_test, state, chain)
-        |> add_blocks(json_test, state, chain)
+    blocktree =
+      create_blocktree()
+      |> add_genesis_block(json_test, state, chain)
+      |> add_blocks(json_test, state, chain)
 
-      best_block_hash = maybe_hex(json_test["lastblockhash"])
+    best_block_hash = maybe_hex(json_test["lastblockhash"])
 
-      assert blocktree.best_block.block_hash == best_block_hash, failure_message(test_name, fork)
-    end
+    {fork, test_name, best_block_hash, blocktree.best_block.block_hash}
   end
 
-  defp failure_message(test_name, fork) do
-    "Block hash mismatch in test #{test_name} for #{fork}"
+  defp make_assertions([]), do: assert(true)
+  defp make_assertions(failing_tests), do: refute(true, failure_message(failing_tests))
+
+  defp failure_message(failing_tests) do
+    total_failures = Enum.count(failing_tests)
+
+    error_messages =
+      failing_tests
+      |> Enum.map(&single_error_message/1)
+      |> Enum.join("\n")
+
+    """
+    Block hash mismatch for the following tests:
+    #{error_messages}
+    -----------------
+    Total failures: #{inspect(total_failures)}
+    """
+  end
+
+  defp single_error_message({fork, test_name, expected, actual}) do
+    "[#{fork}] #{test_name}: expected #{inspect(expected)}, but received #{inspect(actual)}"
+  end
+
+  defp failing_test?({_fork, _test_name, expected, actual}) do
+    expected != actual
   end
 
   defp load_chain(hardfork) do
@@ -93,6 +247,12 @@ defmodule BlockchainTest do
 
       "EIP158" ->
         Chain.load_chain(:eip150_test, config)
+
+      "Byzantium" ->
+        Chain.load_chain(:byzantium_test, config)
+
+      "Constantinople" ->
+        Chain.load_chain(:constantinople_test, config)
 
       _ ->
         nil
@@ -112,6 +272,12 @@ defmodule BlockchainTest do
 
       "EIP158" ->
         EVM.Configuration.EIP158.new()
+
+      "Byzantium" ->
+        EVM.Configuration.Byzantium.new()
+
+      "Constantinople" ->
+        EVM.Configuration.Constantinople.new()
 
       _ ->
         nil
@@ -277,9 +443,8 @@ defmodule BlockchainTest do
   end
 
   defp tests do
-    wildcard = @ethereum_common_tests_path <> "**/*.json"
-
-    wildcard
+    ethereum_common_tests_path()
+    |> Path.join("/BlockchainTests/**/*.json")
     |> Path.wildcard()
     |> Enum.sort()
   end

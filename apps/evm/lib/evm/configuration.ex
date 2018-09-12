@@ -54,8 +54,8 @@ defprotocol EVM.Configuration do
   def exp_byte_cost(t)
 
   # EIP161-a
-  @spec start_nonce(t) :: integer()
-  def start_nonce(t)
+  @spec increment_nonce_on_create?(t) :: boolean()
+  def increment_nonce_on_create?(t)
 
   # EIP161-b
   @spec empty_account_value_transfer?(t) :: boolean()
@@ -72,4 +72,36 @@ defprotocol EVM.Configuration do
   # EIP140
   @spec has_revert?(t) :: boolean()
   def has_revert?(t)
+
+  # EIP211
+  @spec support_variable_length_return_value?(t) :: boolean()
+  def support_variable_length_return_value?(t)
+
+  # EIP214
+  @spec has_static_call?(t) :: boolean()
+  def has_static_call?(t)
+
+  # EIP196
+  @spec has_ec_add_builtin?(t) :: boolean()
+  def has_ec_add_builtin?(t)
+
+  # EIP196
+  @spec has_ec_mult_builtin?(t) :: boolean()
+  def has_ec_mult_builtin?(t)
+
+  # EIP197
+  @spec has_ec_pairing_builtin?(t) :: boolean()
+  def has_ec_pairing_builtin?(t)
+
+  # EIP198
+  @spec has_mod_exp_builtin?(t) :: boolean()
+  def has_mod_exp_builtin?(t)
+
+  # EIP145
+  @spec has_shift_operations?(t) :: boolean()
+  def has_shift_operations?(t)
+
+  # EIP1052
+  @spec has_extcodehash?(t) :: boolean()
+  def has_extcodehash?(t)
 end

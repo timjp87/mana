@@ -4,7 +4,7 @@ defmodule EVM.Functions do
   fit in other modules.
   """
 
-  alias EVM.{ExecEnv, MachineCode, MachineState, Operation, Stack, Gas}
+  alias EVM.{ExecEnv, MachineCode, MachineState, Operation, Stack, Gas, Configuration}
   alias EVM.Operation.Metadata
 
   @max_stack 1024
@@ -129,11 +129,15 @@ defmodule EVM.Functions do
       is_invalid_jump_destination?(operation_metadata, inputs, exec_env.machine_code) ->
         {:halt, :invalid_jump_destination}
 
+      exec_env.static && static_state_modification?(operation_metadata.sym, inputs) ->
+        {:halt, :static_state_modification}
+
       true ->
         :continue
     end
   end
 
+  # credo:disable-for-next-line
   def operation_metadata(operation, exec_env) do
     operation_metadata = Operation.metadata(operation)
 
@@ -142,10 +146,33 @@ defmodule EVM.Functions do
 
       case operation_metadata.sym do
         :delegatecall ->
-          if EVM.Configuration.has_delegate_call?(config), do: operation_metadata
+          if Configuration.has_delegate_call?(config), do: operation_metadata
 
         :revert ->
-          if EVM.Configuration.has_revert?(config), do: operation_metadata
+          if Configuration.has_revert?(config), do: operation_metadata
+
+        :staticcall ->
+          if Configuration.has_static_call?(config), do: operation_metadata
+
+        :returndatasize ->
+          if Configuration.support_variable_length_return_value?(config),
+            do: operation_metadata
+
+        :returndatacopy ->
+          if Configuration.support_variable_length_return_value?(config),
+            do: operation_metadata
+
+        :shl ->
+          if Configuration.has_shift_operations?(config), do: operation_metadata
+
+        :shr ->
+          if Configuration.has_shift_operations?(config), do: operation_metadata
+
+        :sar ->
+          if Configuration.has_shift_operations?(config), do: operation_metadata
+
+        :extcodehash ->
+          if Configuration.has_extcodehash?(config), do: operation_metadata
 
         _ ->
           operation_metadata
@@ -175,4 +202,24 @@ defmodule EVM.Functions do
   end
 
   defp is_invalid_jump_destination?(_operation, _inputs, _machine_code), do: false
+
+  defp static_state_modification?(:call, [_, _, value, _, _, _, _]), do: value > 0
+
+  defp static_state_modification?(:log0, _), do: true
+
+  defp static_state_modification?(:log1, _), do: true
+
+  defp static_state_modification?(:log2, _), do: true
+
+  defp static_state_modification?(:log3, _), do: true
+
+  defp static_state_modification?(:log4, _), do: true
+
+  defp static_state_modification?(:selfdestruct, _), do: true
+
+  defp static_state_modification?(:create, _), do: true
+
+  defp static_state_modification?(:sstore, _), do: true
+
+  defp static_state_modification?(_, _), do: false
 end

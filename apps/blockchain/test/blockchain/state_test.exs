@@ -9,121 +9,235 @@ defmodule Blockchain.StateTest do
   use ExUnit.Case, async: true
 
   @failing_tests %{
-    "EIP150" => [
-      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasBefore",
-      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasAt",
-      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasAfter",
-      "stTransactionTest/UserTransactionGasLimitIsTooLowWhenZeroCost",
-      "stTransactionTest/TransactionToItselfNotEnoughFounds",
-      "stTransactionTest/TransactionNonceCheck2",
-      "stTransactionTest/TransactionNonceCheck",
-      "stTransactionTest/RefundOverflow2",
-      "stTransactionTest/RefundOverflow",
-      "stTransactionTest/OverflowGasRequire",
-      "stTransactionTest/EmptyTransaction",
-      "stTransactionTest/CreateTransactionReverted",
-      "stRevertTest/RevertOpcodeWithBigOutputInInit",
+    "Byzantium" => [
+      "stCreateTest/CreateOOGafterInitCodeReturndata",
+      "stRandom2/randomStatetest647",
+      "stReturnDataTest/call_outsize_then_create_successful_then_returndatasize",
+      "stReturnDataTest/call_then_call_value_fail_then_returndatasize",
+      "stReturnDataTest/call_then_create_successful_then_returndatasize",
+      "stReturnDataTest/modexp_modsize0_returndatasize",
+      "stReturnDataTest/returndatacopy_afterFailing_create",
+      "stReturnDataTest/returndatacopy_after_failing_callcode",
+      "stReturnDataTest/returndatacopy_after_failing_staticcall",
+      "stReturnDataTest/returndatacopy_after_revert_in_staticcall",
+      "stReturnDataTest/returndatacopy_after_successful_callcode",
+      "stReturnDataTest/returndatacopy_after_successful_delegatecall",
+      "stReturnDataTest/returndatacopy_after_successful_staticcall",
+      "stReturnDataTest/returndatacopy_following_call",
+      "stReturnDataTest/returndatacopy_following_create",
+      "stReturnDataTest/returndatacopy_following_failing_call",
+      "stReturnDataTest/returndatacopy_following_revert",
+      "stReturnDataTest/returndatacopy_following_revert_in_create",
+      "stReturnDataTest/returndatacopy_following_successful_create",
+      "stReturnDataTest/returndatacopy_following_too_big_transfer",
+      "stReturnDataTest/returndatacopy_initial",
+      "stReturnDataTest/returndatacopy_initial_256",
+      "stReturnDataTest/returndatacopy_overrun",
+      "stRevertTest/PythonRevertTestTue201814-1430",
+      "stRevertTest/RevertInCallCode",
+      "stRevertTest/RevertInCreateInInit",
+      "stRevertTest/RevertInDelegateCall",
+      "stRevertTest/RevertOpcodeInCreateReturns",
       "stRevertTest/RevertOpcodeMultipleSubCalls",
-      "stRevertTest/RevertOpcodeInInit",
-      "stRandom2/201503110226PYTHON_DUP6",
-      "stInitCodeTest/OutOfGasPrefundedContractCreation",
+      "stSpecialTest/failed_tx_xcf416c53",
+      "stStaticCall/static_Call1024PreCalls2",
+      "stStaticCall/static_PostToReturn1",
+      "stStaticCall/static_callWithHighValueAndOOGatTxLevel",
+      "stTransactionTest/EmptyTransaction2",
+      "stZeroKnowledge2/ecmul_0-3_5616_28000_96"
+    ],
+    "Constantinople" => [
+      "stCreate2/CREATE2_ContractSuicideDuringInit_ThenStoreThenReturn",
+      "stCreate2/CREATE2_Suicide",
+      "stCreate2/Create2OOGafterInitCode",
+      "stCreate2/Create2OOGafterInitCodeReturndata2",
+      "stCreate2/Create2OOGafterInitCodeReturndataSize",
+      "stCreate2/Create2OOGafterInitCodeRevert",
+      "stCreate2/Create2OOGafterInitCodeRevert2",
+      "stCreate2/RevertDepthCreate2OOG",
+      "stCreate2/call_outsize_then_create2_successful_then_returndatasize",
+      "stCreate2/call_then_create2_successful_then_returndatasize",
+      "stCreate2/create2InitCodes",
+      "stCreate2/create2callPrecompiles",
+      "stCreate2/create2checkFieldsInInitcode",
+      "stCreate2/create2collisionBalance",
+      "stCreate2/create2collisionCode",
+      "stCreate2/create2collisionCode2",
+      "stCreate2/create2collisionNonce",
+      "stCreate2/create2collisionSelfdestructed",
+      "stCreate2/create2collisionSelfdestructed2",
+      "stCreate2/create2collisionSelfdestructedRevert",
+      "stCreate2/create2collisionStorage",
+      "stCreate2/create2noCash",
+      "stCreate2/returndatacopy_0_0_following_successful_create",
+      "stCreate2/returndatacopy_afterFailing_create",
+      "stCreate2/returndatacopy_following_revert_in_create",
+      "stCreate2/returndatasize_following_successful_create",
+      "stCreateTest/CreateOOGafterInitCodeReturndata",
+      "stReturnDataTest/returndatacopy_following_failing_call",
+      "stReturnDataTest/returndatacopy_initial_256",
+      "stRevertTest/RevertOpcodeMultipleSubCalls",
+      "stZeroKnowledge2/ecmul_0-3_5616_28000_96"
+    ],
+    "EIP150" => [
+      "stInitCodeTest/NotEnoughCashContractCreation",
       "stInitCodeTest/OutOfGasContractCreation",
-      "stInitCodeTest/NotEnoughCashContractCreation"
+      "stInitCodeTest/OutOfGasPrefundedContractCreation",
+      "stRandom2/201503110226PYTHON_DUP6",
+      "stRevertTest/RevertOpcodeInInit",
+      "stRevertTest/RevertOpcodeMultipleSubCalls",
+      "stRevertTest/RevertOpcodeWithBigOutputInInit",
+      "stTransactionTest/CreateTransactionReverted",
+      "stTransactionTest/EmptyTransaction",
+      "stTransactionTest/OverflowGasRequire",
+      "stTransactionTest/RefundOverflow",
+      "stTransactionTest/RefundOverflow2",
+      "stTransactionTest/TransactionNonceCheck",
+      "stTransactionTest/TransactionNonceCheck2",
+      "stTransactionTest/TransactionToItselfNotEnoughFounds",
+      "stTransactionTest/UserTransactionGasLimitIsTooLowWhenZeroCost",
+      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasAfter",
+      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasAt",
+      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasBefore"
     ],
     "EIP158" => [
-      "stTransactionTest/EmptyTransaction2",
-      "stSpecialTest/failed_tx_xcf416c53",
-      "stRevertTest/RevertPrefound",
       "stRevertTest/RevertOpcodeMultipleSubCalls",
-      "stNonZeroCallsTest/NonZeroValue_CALL_ToOneStorageKey",
-      "stNonZeroCallsTest/NonZeroValue_CALL_ToEmpty"
+      "stSpecialTest/failed_tx_xcf416c53",
+      "stTransactionTest/EmptyTransaction2"
     ],
     "Frontier" => [
-      "stTransactionTest/UserTransactionGasLimitIsTooLowWhenZeroCost",
-      "stTransactionTest/TransactionToItselfNotEnoughFounds",
-      "stTransactionTest/TransactionNonceCheck2",
-      "stTransactionTest/TransactionNonceCheck",
-      "stTransactionTest/RefundOverflow2",
-      "stTransactionTest/RefundOverflow",
-      "stTransactionTest/OverflowGasRequire",
-      "stTransactionTest/EmptyTransaction",
-      "stTransactionTest/CreateTransactionReverted",
-      "stRandom2/201503110226PYTHON_DUP6",
+      "stCallCreateCallCodeTest/createNameRegistratorPerTxsNotEnoughGas",
       "stInitCodeTest/NotEnoughCashContractCreation",
-      "stCallCreateCallCodeTest/createNameRegistratorPerTxsNotEnoughGas"
+      "stRandom2/201503110226PYTHON_DUP6",
+      "stTransactionTest/CreateTransactionReverted",
+      "stTransactionTest/EmptyTransaction",
+      "stTransactionTest/OverflowGasRequire",
+      "stTransactionTest/RefundOverflow",
+      "stTransactionTest/RefundOverflow2",
+      "stTransactionTest/TransactionNonceCheck",
+      "stTransactionTest/TransactionNonceCheck2",
+      "stTransactionTest/TransactionToItselfNotEnoughFounds",
+      "stTransactionTest/UserTransactionGasLimitIsTooLowWhenZeroCost"
     ],
     "Homestead" => [
-      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasBefore",
-      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasAt",
-      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasAfter",
-      "stTransactionTest/UserTransactionGasLimitIsTooLowWhenZeroCost",
-      "stTransactionTest/TransactionToItselfNotEnoughFounds",
-      "stTransactionTest/TransactionNonceCheck2",
-      "stTransactionTest/TransactionNonceCheck",
-      "stTransactionTest/RefundOverflow2",
-      "stTransactionTest/RefundOverflow",
-      "stTransactionTest/OverflowGasRequire",
-      "stTransactionTest/EmptyTransaction",
-      "stTransactionTest/CreateTransactionReverted",
-      "stRevertTest/RevertOpcodeWithBigOutputInInit",
-      "stRevertTest/RevertOpcodeMultipleSubCalls",
-      "stRevertTest/RevertOpcodeInInit",
-      "stRandom2/201503110226PYTHON_DUP6",
-      "stRandom/randomStatetest347",
-      "stRandom/randomStatetest184",
-      "stInitCodeTest/OutOfGasPrefundedContractCreation",
-      "stInitCodeTest/OutOfGasContractCreation",
-      "stInitCodeTest/NotEnoughCashContractCreation",
-      "stDelegatecallTestHomestead/callcodeOutput3partialFail",
-      "stDelegatecallTestHomestead/callcodeOutput3partial",
-      "stDelegatecallTestHomestead/callcodeOutput3Fail",
-      "stDelegatecallTestHomestead/callcodeOutput3",
-      "stDelegatecallTestHomestead/callcodeOutput2",
-      "stDelegatecallTestHomestead/callcodeOutput1",
-      "stDelegatecallTestHomestead/callOutput3partialFail",
-      "stDelegatecallTestHomestead/callOutput3partial",
-      "stDelegatecallTestHomestead/callOutput3Fail",
-      "stDelegatecallTestHomestead/callOutput3",
+      "stDelegatecallTestHomestead/callOutput1",
       "stDelegatecallTestHomestead/callOutput2",
-      "stDelegatecallTestHomestead/callOutput1"
+      "stDelegatecallTestHomestead/callOutput3",
+      "stDelegatecallTestHomestead/callOutput3Fail",
+      "stDelegatecallTestHomestead/callOutput3partial",
+      "stDelegatecallTestHomestead/callOutput3partialFail",
+      "stDelegatecallTestHomestead/callcodeOutput1",
+      "stDelegatecallTestHomestead/callcodeOutput2",
+      "stDelegatecallTestHomestead/callcodeOutput3",
+      "stDelegatecallTestHomestead/callcodeOutput3Fail",
+      "stDelegatecallTestHomestead/callcodeOutput3partial",
+      "stDelegatecallTestHomestead/callcodeOutput3partialFail",
+      "stInitCodeTest/NotEnoughCashContractCreation",
+      "stInitCodeTest/OutOfGasContractCreation",
+      "stInitCodeTest/OutOfGasPrefundedContractCreation",
+      "stRandom/randomStatetest184",
+      "stRandom/randomStatetest347",
+      "stRandom2/201503110226PYTHON_DUP6",
+      "stRevertTest/RevertOpcodeInInit",
+      "stRevertTest/RevertOpcodeMultipleSubCalls",
+      "stRevertTest/RevertOpcodeWithBigOutputInInit",
+      "stTransactionTest/CreateTransactionReverted",
+      "stTransactionTest/EmptyTransaction",
+      "stTransactionTest/OverflowGasRequire",
+      "stTransactionTest/RefundOverflow",
+      "stTransactionTest/RefundOverflow2",
+      "stTransactionTest/TransactionNonceCheck",
+      "stTransactionTest/TransactionNonceCheck2",
+      "stTransactionTest/TransactionToItselfNotEnoughFounds",
+      "stTransactionTest/UserTransactionGasLimitIsTooLowWhenZeroCost",
+      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasAfter",
+      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasAt",
+      "stTransitionTest/createNameRegistratorPerTxsNotEnoughGasBefore"
     ]
   }
 
+  @fifteen_minutes 1000 * 60 * 15
+  @num_test_groups 10
+
+  @tag :ethereum_common_tests
+  @tag :state_common_tests
   test "Blockchain state tests" do
-    Enum.each(test_directories(), fn directory_path ->
-      test_group = Enum.fetch!(String.split(directory_path, "/"), 4)
+    grouped_test_per_fork()
+    |> Task.async_stream(&run_tests(&1), timeout: @fifteen_minutes)
+    |> Enum.flat_map(fn {:ok, results} -> results end)
+    |> make_assertions()
+  end
 
-      directory_path
-      |> tests()
-      |> Enum.each(fn test_path ->
-        test_path
-        |> read_state_test_file()
-        |> Enum.each(fn {test_name, test} ->
-          run_test(test_group, test_name, test)
-        end)
-      end)
+  defp grouped_test_per_fork do
+    for fork <- forks_with_existing_implementation(),
+        test_group <- split_tests_into_groups(@num_test_groups),
+        do: {fork, test_group}
+  end
+
+  defp split_tests_into_groups(num_groups_desired) do
+    all_tests = tests()
+    test_count = Enum.count(all_tests)
+    tests_per_group = div(test_count, num_groups_desired)
+
+    Enum.chunk_every(all_tests, tests_per_group)
+  end
+
+  defp run_tests({fork, tests}) do
+    tests
+    |> Stream.reject(&known_fork_failure?(&1, fork))
+    |> Enum.flat_map(fn test_path ->
+      test_path
+      |> read_state_test_file()
+      |> Stream.filter(&fork_test?(&1, fork))
+      |> Stream.flat_map(&run_test(&1, fork))
+      |> Enum.filter(&failed_test?/1)
     end)
   end
 
-  defp run_test(test_group, test_name, test) do
-    test["post"]
-    |> Enum.each(fn {hardfork, _test_data} ->
-      failing_tests = Map.get(@failing_tests, hardfork, %{})
-
-      if !Enum.member?(failing_tests, "#{test_group}/#{test_name}") do
-        hardfork_configuration = configuration(hardfork)
-
-        if hardfork_configuration do
-          run_transaction(test_name, test, hardfork, hardfork_configuration)
-        end
-      end
-    end)
+  defp fork_test?({_test_name, test_data}, fork) do
+    case Map.fetch(test_data["post"], fork) do
+      {:ok, _test_data} -> true
+      _ -> false
+    end
   end
 
-  defp run_transaction(test_name, test, hardfork, hardfork_configuration) do
+  defp forks_with_existing_implementation do
+    @failing_tests
+    |> Map.keys()
+    |> Enum.reject(&fork_without_implementation?/1)
+  end
+
+  defp fork_without_implementation?(fork) do
+    fork
+    |> configuration()
+    |> is_nil()
+  end
+
+  defp known_fork_failure?(json_test_path, hardfork) do
+    test_name = test_name_with_group_from_path(json_test_path)
+    failing_tests = Map.fetch!(@failing_tests, hardfork)
+
+    Enum.member?(failing_tests, test_name)
+  end
+
+  defp test_name_with_group_from_path(path) do
+    path_elements =
+      path
+      |> Path.rootname()
+      |> Path.split()
+
+    group_name = Enum.fetch!(path_elements, -2)
+    test_name = Enum.fetch!(path_elements, -1)
+
+    Path.join(group_name, test_name)
+  end
+
+  defp run_test({test_name, test}, hardfork) do
+    hardfork_configuration = configuration(hardfork)
+
     test["post"][hardfork]
     |> Enum.with_index()
-    |> Enum.each(fn {post, index} ->
+    |> Enum.map(fn {post, index} ->
       pre_state = account_interface(test).state
 
       indexes = post["indexes"]
@@ -169,15 +283,96 @@ defmodule Blockchain.StateTest do
         |> Map.fetch!("hash")
         |> maybe_hex()
 
-      assert state.root_hash == expected_hash,
-             "State root mismatch for #{test_name} on #{hardfork}"
-
       expected_logs = test["post"][hardfork] |> Enum.at(index) |> Map.fetch!("logs")
       logs_hash = logs_hash(logs)
 
-      assert maybe_hex(expected_logs) == logs_hash,
-             "Logs hash mismatch for #{test_name} on #{hardfork}"
+      %{
+        hardfork: hardfork,
+        test_name: test_name,
+        state_root_mismatch: state.root_hash != expected_hash,
+        state_root_expected: expected_hash,
+        state_root_actual: state.root_hash,
+        logs_hash_mismatch: maybe_hex(expected_logs) != logs_hash,
+        logs_hash_expected: maybe_hex(expected_logs),
+        logs_hash_actual: logs_hash
+      }
     end)
+  end
+
+  defp failed_test?(%{state_root_mismatch: true}), do: true
+  defp failed_test?(%{logs_hash_mismatch: true}), do: true
+  defp failed_test?(%{}), do: false
+
+  defp make_assertions([]), do: assert(true)
+  defp make_assertions(failing_tests), do: assert(false, failure_message(failing_tests))
+
+  defp failure_message(failing_tests) do
+    """
+    #{state_root_failures_message(failing_tests)}
+    =========================
+
+    #{logs_hash_error_message(failing_tests)}
+    """
+  end
+
+  defp state_root_failures_message(failing_tests) do
+    state_root_mismatch_failures =
+      Enum.filter(failing_tests, fn test -> test.state_root_mismatch end)
+
+    total_count = Enum.count(state_root_mismatch_failures)
+
+    state_root_error_messages =
+      state_root_mismatch_failures
+      |> Enum.map(&single_state_root_error_message/1)
+      |> Enum.join("\n")
+
+    """
+    State root mismatch for the following tests:
+    #{inspect(state_root_error_messages)}
+    -----------------
+    Total state root failures: #{inspect(total_count)}
+    """
+  end
+
+  defp logs_hash_error_message(failing_tests) do
+    logs_hash_mismatch_failures =
+      Enum.filter(failing_tests, fn test -> test.logs_hash_mismatch end)
+
+    total_count = Enum.count(logs_hash_mismatch_failures)
+
+    logs_hash_error_messages =
+      logs_hash_mismatch_failures
+      |> Enum.map(&single_logs_hash_error_message/1)
+      |> Enum.join("\n")
+
+    """
+    Logs hash mismatch for the following tests:
+    #{inspect(logs_hash_error_messages)}
+    -----------------
+    Total logs hash failures: #{inspect(total_count)}
+    """
+  end
+
+  defp single_logs_hash_error_message(test_result) do
+    %{
+      hardfork: hardfork,
+      test_name: test_name,
+      logs_hash_expected: expected,
+      logs_hash_actual: actual
+    } = test_result
+
+    "[#{hardfork}] #{test_name}: expected #{inspect(expected)}, but received #{inspect(actual)}"
+  end
+
+  defp single_state_root_error_message(test_result) do
+    %{
+      hardfork: hardfork,
+      test_name: test_name,
+      state_root_expected: expected,
+      state_root_actual: actual
+    } = test_result
+
+    "[#{hardfork}] #{test_name}: expected #{inspect(expected)}, but received #{inspect(actual)}"
   end
 
   def configuration(hardfork) do
@@ -194,8 +389,11 @@ defmodule Blockchain.StateTest do
       "EIP158" ->
         EVM.Configuration.EIP158.new()
 
-      # "Byzantium" ->
-      #   EVM.Configuration.Byzantium.new()
+      "Byzantium" ->
+        EVM.Configuration.Byzantium.new()
+
+      "Constantinople" ->
+        EVM.Configuration.Constantinople.new()
 
       _ ->
         nil
@@ -233,15 +431,6 @@ defmodule Blockchain.StateTest do
     test_path
     |> File.read!()
     |> Poison.decode!()
-  end
-
-  def state_test_file_name(group, test) do
-    file_name = Path.join(~w(st#{group} #{test}.json))
-    relative_path = Path.join(~w(.. .. ethereum_common_tests GeneralStateTests #{file_name}))
-
-    System.cwd()
-    |> Path.join(relative_path)
-    |> Path.expand()
   end
 
   def account_interface(test) do
@@ -290,19 +479,9 @@ defmodule Blockchain.StateTest do
     |> Keccak.kec()
   end
 
-  defp test_directories do
-    path = Path.join([EthCommonTest.Helpers.ethereum_common_tests_path(), "GeneralStateTests"])
-    wildcard = path <> "/*"
-
-    wildcard
-    |> Path.wildcard()
-    |> Enum.sort()
-  end
-
-  defp tests(directory_path) do
-    wildcard = directory_path <> "/**/*.json"
-
-    wildcard
+  defp tests do
+    ethereum_common_tests_path()
+    |> Path.join("/GeneralStateTests/**/*.json")
     |> Path.wildcard()
     |> Enum.sort()
   end

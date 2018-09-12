@@ -66,7 +66,7 @@ defmodule Blockchain.Contract.MessageCall do
   """
   @spec execute(t()) :: {EVM.state(), EVM.Gas.t(), EVM.SubState.t(), EVM.VM.output()}
   def execute(params) do
-    run = MessageCall.get_run_function(params.recipient)
+    run = MessageCall.get_run_function(params.recipient, params.config)
 
     # Note, this could fail if machine code is not in state
     {:ok, machine_code} = Account.get_machine_code(params.state, params.contract)
@@ -92,7 +92,6 @@ defmodule Blockchain.Contract.MessageCall do
       stack_depth: params.stack_depth,
       block_interface: BlockInterface.new(params.block_header, state.db),
       account_interface: account_interace,
-      initial_account_interface: account_interace,
       config: params.config
     }
 
@@ -105,10 +104,15 @@ defmodule Blockchain.Contract.MessageCall do
     # valid jump destination or invalid instruction), then no gas
     # is refunded to the caller and the state is reverted to the
     # point immediately prior to balance transfer.
-    if output == :failed do
-      {params.state, 0, SubState.empty(), :failed}
-    else
-      {exec_env.account_interface.state, gas, sub_state, output}
+    case output do
+      :failed ->
+        {params.state, 0, SubState.empty(), :failed}
+
+      {:revert, _output} ->
+        {params.state, gas, SubState.empty(), :failed}
+
+      _ ->
+        {exec_env.account_interface.state, gas, sub_state, output}
     end
   end
 end

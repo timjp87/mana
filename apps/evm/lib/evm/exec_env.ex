@@ -24,8 +24,7 @@ defmodule EVM.ExecEnv do
             account_interface: nil,
             block_interface: nil,
             config: EVM.Configuration.Frontier.new(),
-            created_accounts: [],
-            initial_account_interface: nil
+            static: false
 
   @typedoc """
   Terms from Yellow Paper:
@@ -52,7 +51,7 @@ defmodule EVM.ExecEnv do
           block_interface: BlockInterface.t(),
           account_interface: AccountInterface.t(),
           config: Configuration.t(),
-          created_accounts: [EVM.address()]
+          static: boolean()
         }
 
   @spec put_storage(t(), integer(), integer()) :: t()
@@ -107,33 +106,18 @@ defmodule EVM.ExecEnv do
     %{exec_env | account_interface: account_interface}
   end
 
-  @spec new_account?(t(), EVM.Address.t()) :: boolean()
-  def new_account?(exec_env, address) do
-    is_new_account = Enum.member?(exec_env.created_accounts, address)
-
-    is_not_existent_account =
-      !AccountInterface.account_exists?(
-        exec_env.initial_account_interface,
-        address
-      )
-
-    is_new_account || is_not_existent_account
+  @spec non_existent_account?(t(), EVM.Address.t()) :: boolean()
+  def non_existent_account?(exec_env, address) do
+    !AccountInterface.account_exists?(
+      exec_env.account_interface,
+      address
+    )
   end
 
-  @spec new_or_empty_account?(t(), EVM.Address.t()) :: boolean()
-  def new_or_empty_account?(exec_env, address) do
-    is_new_account = new_account?(exec_env, address)
+  @spec non_existent_or_empty_account?(t(), EVM.Address.t()) :: boolean()
+  def non_existent_or_empty_account?(exec_env, address) do
+    is_empty_account = AccountInterface.empty_account?(exec_env.account_interface, address)
 
-    is_empty_account =
-      AccountInterface.empty_account?(exec_env.initial_account_interface, address)
-
-    is_new_account || is_empty_account
-  end
-
-  @spec add_created_address(t(), integer()) :: t()
-  def add_created_address(exec_env, address) do
-    address = :binary.encode_unsigned(address)
-
-    %{exec_env | created_accounts: [address | exec_env.created_accounts]}
+    is_empty_account || non_existent_account?(exec_env, address)
   end
 end

@@ -30,8 +30,6 @@ defmodule Blockchain.Block do
           ommers: [Header.t()]
         }
 
-  # R_b in Eq.(164)
-  @base_reward round(5.0e18)
   @block_reward_ommer_divisor 32
   @block_reward_ommer_offset 8
 
@@ -513,18 +511,43 @@ defmodule Blockchain.Block do
   """
   @spec set_block_difficulty(t, Chain.t(), t) :: t
   def set_block_difficulty(block, chain, parent_block) do
-    # TODO: Incorporate more of chain
-    difficulty =
-      Header.get_difficulty(
-        block.header,
-        if(parent_block, do: parent_block.header, else: nil),
-        chain.genesis[:difficulty],
-        chain.engine["Ethash"][:minimum_difficulty],
-        chain.engine["Ethash"][:difficulty_bound_divisor],
-        chain.engine["Ethash"][:homestead_transition]
-      )
+    difficulty = get_difficulty(block, parent_block, chain)
 
     %{block | header: %{block.header | difficulty: difficulty}}
+  end
+
+  defp get_difficulty(block, parent_block, chain) do
+    homestead_block = chain.engine["Ethash"][:homestead_transition]
+    byzantium_block = chain.engine["Ethash"][:eip100b_transition]
+
+    cond do
+      Header.is_before_homestead?(block.header, homestead_block) ->
+        Header.get_frontier_difficulty(
+          block.header,
+          if(parent_block, do: parent_block.header, else: nil),
+          chain.genesis[:difficulty],
+          chain.engine["Ethash"][:minimum_difficulty],
+          chain.engine["Ethash"][:difficulty_bound_divisor]
+        )
+
+      Header.is_before_byzantium?(block.header, byzantium_block) ->
+        Header.get_homestead_difficulty(
+          block.header,
+          if(parent_block, do: parent_block.header, else: nil),
+          chain.genesis[:difficulty],
+          chain.engine["Ethash"][:minimum_difficulty],
+          chain.engine["Ethash"][:difficulty_bound_divisor]
+        )
+
+      true ->
+        Header.get_byzantium_difficulty(
+          block.header,
+          if(parent_block, do: parent_block.header, else: nil),
+          chain.genesis[:difficulty],
+          chain.engine["Ethash"][:minimum_difficulty],
+          chain.engine["Ethash"][:difficulty_bound_divisor]
+        )
+    end
   end
 
   @doc """
@@ -613,7 +636,7 @@ defmodule Blockchain.Block do
       iex> db = MerklePatriciaTree.Test.random_ets_db()
       iex> chain = Blockchain.Test.ropsten_chain()
       iex> Blockchain.Genesis.create_block(chain, db)
-      ...> |> Blockchain.Block.add_rewards(db)
+      ...> |> Blockchain.Block.add_rewards(db, chain)
       ...> |> Blockchain.Block.validate(chain, nil, db)
       :valid
 
@@ -629,29 +652,32 @@ defmodule Blockchain.Block do
       iex> parent = Blockchain.Genesis.create_block(chain, db)
       iex> beneficiary = <<0x05::160>>
       iex> child = Blockchain.Block.gen_child_block(parent, chain, beneficiary: beneficiary)
-      ...>         |> Blockchain.Block.add_rewards(db, chain.engine["Ethash"][:block_reward])
+      ...> |> Blockchain.Block.add_rewards(db, chain)
       iex> Blockchain.Block.validate(child, chain, parent, db)
       :valid
   """
   @spec validate(t, Chain.t(), t, DB.db()) :: :valid | {:invalid, [atom()]}
   def validate(block, chain, parent_block, db) do
+    with :valid <- validate_parent_block(block, parent_block),
+         expected_difficulty <- get_difficulty(block, parent_block, chain),
+         :valid <-
+           Header.validate(
+             block.header,
+             if(parent_block, do: parent_block.header, else: nil),
+             expected_difficulty,
+             chain.params[:gas_limit_bound_divisor],
+             chain.params[:min_gas_limit]
+           ) do
+      # Pass to holistic validity check
+      HolisticValidity.validate(block, chain, parent_block, db)
+    end
+  end
+
+  defp validate_parent_block(block, parent_block) do
     if block.header.number > 0 and parent_block == :parent_not_found do
       {:errors, [:non_genesis_block_requires_parent]}
     else
-      with :valid <-
-             Header.validate(
-               block.header,
-               if(parent_block, do: parent_block.header, else: nil),
-               chain.engine["Ethash"][:homestead_transition],
-               chain.genesis[:difficulty],
-               chain.engine["Ethash"][:minimum_difficulty],
-               chain.engine["Ethash"][:difficulty_bound_divisor],
-               chain.params[:gas_limit_bound_divisor],
-               chain.params[:min_gas_limit]
-             ) do
-        # Pass to holistic validity check
-        HolisticValidity.validate(block, chain, parent_block, db)
-      end
+      :valid
     end
   end
 
@@ -689,8 +715,8 @@ defmodule Blockchain.Block do
          config
        ) do
     state = Trie.new(db, header.state_root)
-    # TODO: How do we deal with invalid transactions
-    {new_state, gas_used, logs} = Transaction.execute(state, trx, header, config)
+
+    {new_state, gas_used, logs} = Transaction.execute_with_validation(state, trx, header, config)
 
     total_gas_used = block.header.gas_used + gas_used
 
@@ -787,49 +813,42 @@ defmodule Blockchain.Block do
 
       iex> db = MerklePatriciaTree.Test.random_ets_db()
       iex> miner = <<0x05::160>>
+      iex> chain = Blockchain.Test.ropsten_chain()
       iex> state = MerklePatriciaTree.Trie.new(db)
       ...>         |> Blockchain.Account.put_account(miner, %Blockchain.Account{balance: 400_000})
       iex> block = %Blockchain.Block{header: %Block.Header{number: 0, state_root: state.root_hash, beneficiary: miner}}
       iex> block
-      ...> |> Blockchain.Block.add_rewards(db)
+      ...> |> Blockchain.Block.add_rewards(db, chain)
       ...> |> Blockchain.Block.get_state(db)
       ...> |> Blockchain.Account.get_accounts([miner])
       [%Blockchain.Account{balance: 400_000}]
 
       iex> db = MerklePatriciaTree.Test.random_ets_db()
       iex> miner = <<0x05::160>>
+      iex> chain = Blockchain.Test.ropsten_chain()
       iex> state = MerklePatriciaTree.Trie.new(db)
       ...>         |> Blockchain.Account.put_account(miner, %Blockchain.Account{balance: 400_000})
       iex> block = %Blockchain.Block{header: %Block.Header{state_root: state.root_hash, beneficiary: miner}}
       iex> block
-      ...> |> Blockchain.Block.add_rewards(db)
+      ...> |> Blockchain.Block.add_rewards(db, chain)
       ...> |> Blockchain.Block.get_state(db)
       ...> |> Blockchain.Account.get_accounts([miner])
-      [%Blockchain.Account{balance: 5000000000000400000}]
-
-      iex> db = MerklePatriciaTree.Test.random_ets_db()
-      iex> miner = <<0x05::160>>
-      iex> state = MerklePatriciaTree.Trie.new(db)
-      ...>         |> Blockchain.Account.put_account(miner, %Blockchain.Account{balance: 400_000})
-      iex> block = %Blockchain.Block{header: %Block.Header{state_root: state.root_hash, beneficiary: miner}}
-      iex> block
-      ...> |> Blockchain.Block.add_rewards(db, 100)
-      ...> |> Blockchain.Block.get_state(db)
-      ...> |> Blockchain.Account.get_accounts([miner])
-      [%Blockchain.Account{balance: 400100}]
+      [%Blockchain.Account{balance: 3000000000000400000}]
   """
-  @spec add_rewards(t, DB.db(), EVM.Wei.t()) :: t
-  def add_rewards(block, db, base_reward \\ @base_reward)
+  @spec add_rewards(t, DB.db(), Chain.t()) :: t
+  def add_rewards(block, db, chain)
 
-  def add_rewards(%{header: %{beneficiary: beneficiary}}, _db, _base_reward)
+  def add_rewards(%{header: %{beneficiary: beneficiary}}, _db, _chain)
       when is_nil(beneficiary),
       do: raise("Unable to add block rewards, beneficiary is nil")
 
-  def add_rewards(block = %{header: %{number: number}}, _db, _base_reward)
+  def add_rewards(block = %{header: %{number: number}}, _db, _chain)
       when number == 0,
       do: block
 
-  def add_rewards(block, db, base_reward) do
+  def add_rewards(block, db, chain) do
+    base_reward = calculate_base_reward(block, chain)
+
     state =
       block
       |> get_state(db)
@@ -837,6 +856,16 @@ defmodule Blockchain.Block do
       |> add_ommer_rewards(block, base_reward)
 
     set_state(block, state)
+  end
+
+  defp calculate_base_reward(block, chain) do
+    byzantium_transition = chain.engine["Ethash"][:eip649_transition]
+
+    if Header.is_before_byzantium?(block.header, byzantium_transition) do
+      chain.engine["Ethash"][:block_reward]
+    else
+      chain.engine["Ethash"][:eip649_reward]
+    end
   end
 
   defp add_miner_reward(state, block, base_reward) do

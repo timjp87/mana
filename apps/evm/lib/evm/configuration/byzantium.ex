@@ -1,6 +1,12 @@
 defmodule EVM.Configuration.Byzantium do
   defstruct fallback_config: EVM.Configuration.EIP158.new(),
-            has_revert: true
+            has_revert: true,
+            has_static_call: true,
+            support_variable_length_return_value: true,
+            has_mod_exp_builtin: true,
+            has_ec_add_builtin: true,
+            has_ec_mult_builtin: true,
+            has_ec_pairing_builtin: true
 
   def new do
     %__MODULE__{}
@@ -54,8 +60,9 @@ defimpl EVM.Configuration, for: EVM.Configuration.Byzantium do
   def limit_contract_code_size?(config, size),
     do: Configuration.limit_contract_code_size?(config.fallback_config, size)
 
-  @spec start_nonce(Configuration.t()) :: integer()
-  def start_nonce(config), do: Configuration.start_nonce(config.fallback_config)
+  @spec increment_nonce_on_create?(Configuration.t()) :: boolean()
+  def increment_nonce_on_create?(config),
+    do: Configuration.increment_nonce_on_create?(config.fallback_config)
 
   @spec empty_account_value_transfer?(Configuration.t()) :: boolean()
   def empty_account_value_transfer?(config),
@@ -67,4 +74,30 @@ defimpl EVM.Configuration, for: EVM.Configuration.Byzantium do
 
   @spec has_revert?(Configuration.t()) :: boolean()
   def has_revert?(config), do: config.has_revert
+
+  @spec has_static_call?(Configuration.t()) :: boolean()
+  def has_static_call?(config), do: config.has_static_call
+
+  @spec support_variable_length_return_value?(Configuration.t()) :: boolean()
+  def support_variable_length_return_value?(config),
+    do: config.support_variable_length_return_value
+
+  @spec has_mod_exp_builtin?(Configuration.t()) :: boolean()
+  def has_mod_exp_builtin?(config), do: config.has_mod_exp_builtin
+
+  @spec has_ec_add_builtin?(Configuration.t()) :: boolean()
+  def has_ec_add_builtin?(config), do: config.has_ec_add_builtin
+
+  @spec has_ec_mult_builtin?(Configuration.t()) :: boolean()
+  def has_ec_mult_builtin?(config), do: config.has_ec_mult_builtin
+
+  @spec has_ec_pairing_builtin?(Configuration.t()) :: boolean()
+  def has_ec_pairing_builtin?(config), do: config.has_ec_pairing_builtin
+
+  @spec has_shift_operations?(Configuration.t()) :: boolean()
+  def has_shift_operations?(config),
+    do: Configuration.has_shift_operations?(config.fallback_config)
+
+  @spec has_extcodehash?(Configuration.t()) :: boolean()
+  def has_extcodehash?(config), do: Configuration.has_extcodehash?(config.fallback_config)
 end

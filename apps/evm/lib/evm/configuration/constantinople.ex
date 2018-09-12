@@ -1,66 +1,59 @@
-defmodule EVM.Configuration.EIP150 do
-  defstruct extcodesize_cost: 700,
-            extcodecopy_cost: 700,
-            balance_cost: 400,
-            sload_cost: 200,
-            call_cost: 700,
-            selfdestruct_cost: 5_000,
-            new_account_destruction_cost: 25_000,
-            fail_nested_operation: false,
-            fallback_config: EVM.Configuration.Homestead.new()
+defmodule EVM.Configuration.Constantinople do
+  defstruct fallback_config: EVM.Configuration.Byzantium.new(),
+            has_shift_operations: true,
+            has_extcodehash: true
 
   def new do
     %__MODULE__{}
   end
 end
 
-defimpl EVM.Configuration, for: EVM.Configuration.EIP150 do
+defimpl EVM.Configuration, for: EVM.Configuration.Constantinople do
   alias EVM.Configuration
 
   @spec contract_creation_cost(Configuration.t()) :: integer()
-  def contract_creation_cost(config), do: config.fallback_config.contract_creation_cost
+  def contract_creation_cost(config),
+    do: Configuration.contract_creation_cost(config.fallback_config)
 
   @spec has_delegate_call?(Configuration.t()) :: boolean()
-  def has_delegate_call?(config), do: config.fallback_config.has_delegate_call
+  def has_delegate_call?(config), do: Configuration.has_delegate_call?(config.fallback_config)
 
   @spec max_signature_s(Configuration.t()) :: atom()
   def max_signature_s(config), do: Configuration.max_signature_s(config.fallback_config)
 
   @spec fail_contract_creation_lack_of_gas?(Configuration.t()) :: boolean()
   def fail_contract_creation_lack_of_gas?(config),
-    do: config.fallback_config.fail_contract_creation
+    do: Configuration.fail_contract_creation_lack_of_gas?(config.fallback_config)
 
   @spec extcodesize_cost(Configuration.t()) :: integer()
-  def extcodesize_cost(config), do: config.extcodesize_cost
+  def extcodesize_cost(config), do: Configuration.extcodesize_cost(config.fallback_config)
 
   @spec extcodecopy_cost(Configuration.t()) :: integer()
-  def extcodecopy_cost(config), do: config.extcodecopy_cost
+  def extcodecopy_cost(config), do: Configuration.extcodecopy_cost(config.fallback_config)
 
   @spec balance_cost(Configuration.t()) :: integer()
-  def balance_cost(config), do: config.balance_cost
+  def balance_cost(config), do: Configuration.balance_cost(config.fallback_config)
 
   @spec sload_cost(Configuration.t()) :: integer()
-  def sload_cost(config), do: config.sload_cost
+  def sload_cost(config), do: Configuration.sload_cost(config.fallback_config)
 
   @spec call_cost(Configuration.t()) :: integer()
-  def call_cost(config), do: config.call_cost
+  def call_cost(config), do: Configuration.call_cost(config.fallback_config)
 
   @spec selfdestruct_cost(Configuration.t(), keyword()) :: integer()
-  def selfdestruct_cost(config, new_account: false), do: config.selfdestruct_cost
-
-  def selfdestruct_cost(config, new_account: true) do
-    config.selfdestruct_cost + config.new_account_destruction_cost
-  end
+  def selfdestruct_cost(config, params),
+    do: Configuration.selfdestruct_cost(config.fallback_config, params)
 
   @spec fail_nested_operation_lack_of_gas?(Configuration.t()) :: boolean()
-  def fail_nested_operation_lack_of_gas?(config), do: config.fail_nested_operation
+  def fail_nested_operation_lack_of_gas?(config),
+    do: Configuration.fail_nested_operation_lack_of_gas?(config.fallback_config)
 
   @spec exp_byte_cost(Configuration.t()) :: integer()
   def exp_byte_cost(config), do: Configuration.exp_byte_cost(config.fallback_config)
 
   @spec limit_contract_code_size?(Configuration.t(), integer()) :: boolean()
-  def limit_contract_code_size?(config, _),
-    do: Configuration.limit_contract_code_size?(config.fallback_config)
+  def limit_contract_code_size?(config, size),
+    do: Configuration.limit_contract_code_size?(config.fallback_config, size)
 
   @spec increment_nonce_on_create?(Configuration.t()) :: boolean()
   def increment_nonce_on_create?(config),
@@ -99,8 +92,8 @@ defimpl EVM.Configuration, for: EVM.Configuration.EIP150 do
 
   @spec has_shift_operations?(Configuration.t()) :: boolean()
   def has_shift_operations?(config),
-    do: Configuration.has_shift_operations?(config.fallback_config)
+    do: config.has_shift_operations
 
   @spec has_extcodehash?(Configuration.t()) :: boolean()
-  def has_extcodehash?(config), do: Configuration.has_extcodehash?(config.fallback_config)
+  def has_extcodehash?(config), do: config.has_extcodehash
 end

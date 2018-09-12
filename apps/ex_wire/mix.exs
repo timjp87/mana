@@ -13,7 +13,7 @@ defmodule ExWire.Mixfile do
       package: [
         maintainers: ["Mason Fischer", "Geoffrey Hayes", "Ayrat Badykov"],
         licenses: ["MIT"],
-        links: %{"GitHub" => "https://github.com/exthereum/ex_wire"}
+        links: %{"GitHub" => "https://github.com/poanetwork/mana/tree/master/apps/ex_wire"}
       ],
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
@@ -31,7 +31,6 @@ defmodule ExWire.Mixfile do
 
   defp deps do
     [
-      {:credo, "~> 0.9.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.16", only: :dev, runtime: false},
       {:ex_rlp, "~> 0.3.0"},
       {:blockchain, in_umbrella: true},

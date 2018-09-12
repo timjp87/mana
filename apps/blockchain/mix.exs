@@ -11,13 +11,14 @@ defmodule Blockchain.Mixfile do
       lockfile: "../../mix.lock",
       description: "Ethereum's Blockchain Manager",
       package: [
-        maintainers: ["Geoffrey Hayes", "Ayrat Badykov", "Mason Forest"],
-        licenses: ["MIT"],
-        links: %{"GitHub" => "https://github.com/exthereum/blockchain"}
+        maintainers: ["Ayrat Badykov", "Mason Forest"],
+        licenses: ["LGPL v3"],
+        links: %{"GitHub" => "https://github.com/poanetwork/mana/apps/blockchain"}
       ],
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env())
     ]
   end
 
@@ -48,7 +49,6 @@ defmodule Blockchain.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:credo, "~>  0.9.1", only: [:dev, :test], runtime: false},
       {:ethereumex, "~> 0.3.2"},
       {:evm, in_umbrella: true},
       {:ex_rlp, "~> 0.3.0"},
@@ -57,4 +57,7 @@ defmodule Blockchain.Mixfile do
       {:poison, "~> 3.1.0"}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end

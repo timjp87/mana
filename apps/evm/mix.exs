@@ -9,11 +9,11 @@ defmodule EVM.Mixfile do
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
       lockfile: "../../mix.lock",
-      description: "Ethereum's Virtual Machine, in all its glory.",
+      description: "Ethereum's Virtual Machine",
       package: [
-        maintainers: ["Geoffrey Hayes", "Ayrat Badykov", "Mason Forest"],
-        licenses: ["MIT"],
-        links: %{"GitHub" => "https://github.com/exthereum/evm"}
+        maintainers: ["Ayrat Badykov", "Mason Forest"],
+        licenses: ["LGPL v3"],
+        links: %{"GitHub" => "https://github.com/poanetwork/mana/apps/evm"}
       ],
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -46,12 +46,12 @@ defmodule EVM.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:credo, "~> 0.9.1", only: [:dev, :test], runtime: false},
       {:poison, "~> 3.1.0", only: [:dev, :test], runtime: false},
       {:decimal, "~>1.5.0"},
       {:merkle_patricia_tree, in_umbrella: true},
       {:exth_crypto, in_umbrella: true},
-      {:ex_rlp, "~> 0.3.0"}
+      {:ex_rlp, "~> 0.3.0"},
+      {:bn, "~> 0.2.1"}
     ]
   end
 

@@ -12,10 +12,18 @@ defmodule EVM.Configuration.Frontier do
             fail_nested_operation: true,
             exp_byte_cost: 10,
             limit_contract_code_size: false,
-            start_nonce: 0,
+            increment_nonce_on_create: false,
             empty_account_value_transfer: false,
             clean_touched_accounts: false,
-            has_revert: false
+            has_revert: false,
+            has_static_call: false,
+            support_variable_length_return_value: false,
+            has_mod_exp_builtin: false,
+            has_ec_add_builtin: false,
+            has_ec_mult_builtin: false,
+            has_ec_pairing_builtin: false,
+            has_shift_operations: false,
+            has_extcodehash: false
 
   def new do
     %__MODULE__{}
@@ -64,8 +72,8 @@ defimpl EVM.Configuration, for: EVM.Configuration.Frontier do
   @spec limit_contract_code_size?(Configuration.t(), integer()) :: boolean()
   def limit_contract_code_size?(config, _), do: config.limit_contract_code_size
 
-  @spec start_nonce(Configuration.t()) :: integer()
-  def start_nonce(config), do: config.start_nonce
+  @spec increment_nonce_on_create?(Configuration.t()) :: boolean()
+  def increment_nonce_on_create?(config), do: config.increment_nonce_on_create
 
   @spec empty_account_value_transfer?(Configuration.t()) :: boolean()
   def empty_account_value_transfer?(config), do: config.empty_account_value_transfer
@@ -75,4 +83,29 @@ defimpl EVM.Configuration, for: EVM.Configuration.Frontier do
 
   @spec has_revert?(Configuration.t()) :: boolean()
   def has_revert?(config), do: config.has_revert
+
+  @spec has_static_call?(Configuration.t()) :: boolean()
+  def has_static_call?(config), do: config.has_static_call
+
+  @spec support_variable_length_return_value?(Configuration.t()) :: boolean()
+  def support_variable_length_return_value?(config),
+    do: config.support_variable_length_return_value
+
+  @spec has_mod_exp_builtin?(Configuration.t()) :: boolean()
+  def has_mod_exp_builtin?(config), do: config.has_mod_exp_builtin
+
+  @spec has_ec_add_builtin?(Configuration.t()) :: boolean()
+  def has_ec_add_builtin?(config), do: config.has_ec_add_builtin
+
+  @spec has_ec_mult_builtin?(Configuration.t()) :: boolean()
+  def has_ec_mult_builtin?(config), do: config.has_ec_mult_builtin
+
+  @spec has_ec_pairing_builtin?(Configuration.t()) :: boolean()
+  def has_ec_pairing_builtin?(config), do: config.has_ec_pairing_builtin
+
+  @spec has_shift_operations?(Configuration.t()) :: boolean()
+  def has_shift_operations?(config), do: config.has_shift_operations
+
+  @spec has_extcodehash?(Configuration.t()) :: boolean()
+  def has_extcodehash?(config), do: config.has_extcodehash
 end

@@ -13,7 +13,9 @@ defmodule MerklePatriciaTree.Mixfile do
       package: [
         maintainers: ["Geoffrey Hayes", "Ayrat Badykov", "Mason Forest"],
         licenses: ["MIT"],
-        links: %{"GitHub" => "https://github.com/exthereum/merkle_patricia_tree"}
+        links: %{
+          "GitHub" => "https://github.com/poanetwork/mana/tree/master/apps/merkle_patricia_tree"
+        }
       ],
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -42,9 +44,9 @@ defmodule MerklePatriciaTree.Mixfile do
   #   {:myapp, in_umbrella: true}
   #
   # Type `mix help deps` for more examples and options
+  #
   defp deps do
     [
-      {:credo, "~> 0.9.1", only: [:dev, :test], runtime: false},
       {:poison, "~> 3.1.0", only: [:dev, :test], runtime: false},
       {:ex_rlp, "~> 0.3.0"},
       {:exth_crypto, in_umbrella: true},
